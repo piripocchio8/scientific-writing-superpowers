@@ -1,0 +1,24 @@
+{
+  "name": "scientific-writing-superpowers",
+  "version": "0.0.1",
+  "description": "DOCX-first scientific manuscript preparation toolkit for chemistry and biology labs. Recycles the superpowers brainstorming + planning + code-review trio and adds 24 SWS-original agents, 9 writing-context profiles, marker-scoped hooks, and a filesystem-index utility.",
+  "author": {
+    "name": "Marco Chino",
+    "email": "65242025+piripocchio8@users.noreply.github.com",
+    "url": "https://github.com/piripocchio8"
+  },
+  "homepage": "https://github.com/piripocchio8/scientific-writing-superpowers",
+  "repository": "https://github.com/piripocchio8/scientific-writing-superpowers",
+  "license": "MIT",
+  "keywords": [
+    "scientific-writing",
+    "manuscript",
+    "docx",
+    "chemistry",
+    "biology",
+    "academic-writing",
+    "peer-review",
+    "claude-code",
+    "claude-plugin"
+  ]
+}
