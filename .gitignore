@@ -1,0 +1,18 @@
+# Plugin-development working files
+claude_memory/
+project_*.md
+.sws-project.local.md
+*.backup_pre_*.docx
+scratch/
+tmp/
+
+# Claude Code per-machine local settings
+.claude/settings.local.json
+
+# Python / general
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.idea/
