@@ -1,0 +1,15 @@
+---
+sws_version: 0.1
+article_type: ${article_type}
+language: ${language}
+format: ${format}
+target_journal: ${target_journal}
+target_call: ${target_call}
+notebooklm:
+  enabled: ${notebooklm_enabled}
+created: ${created_iso}
+---
+
+# ${short_handle} — SWS marker
+
+Free-form notes preserved across regenerations.
