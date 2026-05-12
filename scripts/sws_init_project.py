@@ -14,6 +14,10 @@ CLI subcommands wrap these for skill invocation:
     python sws_init_project.py apply --plan <plan.json>
 """
 from __future__ import annotations
+import argparse
+import json
+import shutil
+import sys
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -341,3 +345,189 @@ def _claude_md_vars(inputs: dict) -> dict:
         "year": str(inputs["year"]),
         "co_authors_present": "true" if inputs["co_authors_present"] else "false",
     }
+
+
+def apply_plan(plan: list, project_root, plugin_root) -> tuple[bool, list[str]]:
+    """Execute plan ops in order; rollback on per-op failure or exception.
+
+    Returns (ok, log). On success, log contains executed-op messages.
+    On failure, log contains executed-op messages + rollback messages.
+    User-pre-existing files are touched only via the resolutions the user
+    accepted at scan-prompt time.
+    """
+    project_root = Path(project_root).resolve()
+    plugin_root = Path(plugin_root).resolve()
+    log: list[str] = []
+    undo: list[Op] = []
+
+    try:
+        for op in plan:
+            _execute_op(op, project_root, plugin_root, undo)
+            log.append(f"OK  {op.kind:16s} {op.dest or op.source}")
+    except Exception as e:
+        log.append(f"FAIL {op.kind:16s} {op.dest or op.source}: {e!r}")
+        log.append("--- rolling back ---")
+        for undo_op in reversed(undo):
+            try:
+                _rollback_op(undo_op, project_root)
+                log.append(f"UNDO {undo_op.kind:15s} {undo_op.dest or undo_op.source}")
+            except Exception as ue:
+                log.append(f"UNDO-FAIL {undo_op.kind}: {ue!r}")
+        return False, log
+
+    return True, log
+
+
+def _execute_op(op, project_root, plugin_root, undo: list) -> None:
+    """Execute a single op; record undo info on success."""
+    if op.kind == "mkdir":
+        target = project_root / op.dest
+        if target.exists():
+            return  # idempotent — pre-existing dir, do not record undo
+        target.mkdir(parents=True, exist_ok=False)
+        undo.append(op)
+
+    elif op.kind == "mv":
+        src = project_root / op.source
+        dest = project_root / op.dest
+        if not src.exists():
+            raise FileNotFoundError(f"source missing: {op.source}")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(src), str(dest))
+        undo.append(op)
+
+    elif op.kind == "mv_glob":
+        # source like "Figures/*.{png,jpg,...}", dest is a directory
+        # For v0.1 simplicity we expand a fixed set of extensions.
+        import re
+        m = re.match(r"^(.+?)/\*\.\{([^}]+)\}$", op.source)
+        if not m:
+            raise ValueError(f"unsupported mv_glob source: {op.source}")
+        src_dir = project_root / m.group(1)
+        exts = m.group(2).split(",")
+        moved = []
+        for ext in exts:
+            for f in sorted(src_dir.glob(f"*.{ext}")):
+                target = project_root / op.dest / f.name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(f), str(target))
+                moved.append((str(f), str(target)))
+        undo.append(Op(kind="mv_glob", extra={"moved": moved}))
+
+    elif op.kind == "render_template":
+        # late import to avoid cycle on import-time
+        sys.path.insert(0, str(plugin_root / "scripts"))
+        import sws_render_template
+        tpl = plugin_root / op.source
+        out = project_root / op.dest
+        sws_render_template.render(tpl, op.extra.get("vars", {}), out)
+        undo.append(op)
+
+    elif op.kind == "write_json":
+        out = project_root / op.dest
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(op.extra["content"], indent=2, sort_keys=True))
+        undo.append(op)
+
+    else:
+        raise ValueError(f"unknown op kind: {op.kind}")
+
+
+def _rollback_op(op, project_root) -> None:
+    """Reverse a previously-executed op."""
+    if op.kind == "mkdir":
+        target = project_root / op.dest
+        if target.is_dir():
+            # rmdir only if empty; if non-empty (subsequent ops added contents),
+            # the contents were created by other ops which we'll roll back first.
+            try:
+                target.rmdir()
+            except OSError:
+                shutil.rmtree(target)
+
+    elif op.kind == "mv":
+        # reverse the move
+        src = project_root / op.dest
+        dest = project_root / op.source
+        if src.exists():
+            shutil.move(str(src), str(dest))
+
+    elif op.kind == "mv_glob":
+        for original, moved_to in reversed(op.extra.get("moved", [])):
+            if Path(moved_to).exists():
+                shutil.move(moved_to, original)
+
+    elif op.kind == "render_template":
+        target = project_root / op.dest
+        if target.exists():
+            target.unlink()
+
+    elif op.kind == "write_json":
+        target = project_root / op.dest
+        if target.exists():
+            target.unlink()
+
+
+def _cli_scan(args):
+    conflicts = scan_conflicts(args.root)
+    print(json.dumps([
+        {"cls": c.cls, "path": c.path, "suggested_action": c.suggested_action,
+         "options": c.options}
+        for c in conflicts
+    ], indent=2))
+    return 0
+
+
+def _cli_plan(args):
+    inputs = json.loads(Path(args.inputs).read_text())
+    resolutions = json.loads(Path(args.resolutions).read_text()) if args.resolutions else {}
+    conflicts_data = json.loads(Path(args.conflicts).read_text()) if args.conflicts else []
+    conflicts = [Conflict(**c) for c in conflicts_data]
+    ok, msg = validate_inputs(inputs)
+    if not ok:
+        print(msg, file=sys.stderr)
+        return 2
+    plan = build_plan(inputs, conflicts=conflicts, resolutions=resolutions)
+    print(json.dumps([
+        {"kind": op.kind, "source": op.source, "dest": op.dest,
+         "reason": op.reason, "extra": op.extra}
+        for op in plan
+    ], indent=2))
+    return 0
+
+
+def _cli_apply(args):
+    plan_data = json.loads(Path(args.plan).read_text())
+    plan = [Op(**op) for op in plan_data]
+    ok, log = apply_plan(plan, project_root=args.root, plugin_root=args.plugin_root)
+    for line in log:
+        print(line)
+    return 0 if ok else 1
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_scan = sub.add_parser("scan")
+    p_scan.add_argument("--root", default=".")
+    p_scan.set_defaults(func=_cli_scan)
+
+    p_plan = sub.add_parser("plan")
+    p_plan.add_argument("--inputs", required=True)
+    p_plan.add_argument("--conflicts")
+    p_plan.add_argument("--resolutions")
+    p_plan.set_defaults(func=_cli_plan)
+
+    p_apply = sub.add_parser("apply")
+    p_apply.add_argument("--plan", required=True)
+    p_apply.add_argument("--root", default=".")
+    p_apply.add_argument("--plugin-root", required=True)
+    p_apply.set_defaults(func=_cli_apply)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

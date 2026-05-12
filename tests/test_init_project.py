@@ -4,6 +4,7 @@ Tests grow incrementally per cycle-#2 task: slugify (Task 6),
 validate_inputs (Task 7), scan_conflicts (Task 8), build_plan
 (Task 9), apply_plan + rollback (Task 10).
 """
+import json
 import sys
 import tempfile
 import unittest
@@ -300,6 +301,100 @@ class TestBuildPlan(unittest.TestCase):
             "templates/manuscript-claude-md.template",
             "templates/manuscript-memory-md.template",
         })
+
+
+class TestApplyPlan(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        # plugin templates need to be reachable; tests use real templates from repo
+        self.plugin_root = Path(__file__).resolve().parent.parent
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, plan):
+        return sws_init_project.apply_plan(
+            plan, project_root=self.root, plugin_root=self.plugin_root,
+        )
+
+    def test_mkdir_creates_dirs(self):
+        from sws_init_project import Op
+        plan = [Op(kind="mkdir", dest="Manuscript"),
+                Op(kind="mkdir", dest="Figures/main")]
+        ok, log = self._run(plan)
+        self.assertTrue(ok, log)
+        self.assertTrue((self.root / "Manuscript").is_dir())
+        self.assertTrue((self.root / "Figures" / "main").is_dir())
+
+    def test_mv_moves_file(self):
+        from sws_init_project import Op
+        (self.root / "paper.docx").write_bytes(b"abc")
+        plan = [Op(kind="mkdir", dest="Manuscript"),
+                Op(kind="mv", source="paper.docx", dest="Manuscript/paper.docx")]
+        ok, log = self._run(plan)
+        self.assertTrue(ok, log)
+        self.assertFalse((self.root / "paper.docx").exists())
+        self.assertTrue((self.root / "Manuscript" / "paper.docx").exists())
+
+    def test_render_template_uses_renderer(self):
+        from sws_init_project import Op
+        plan = [
+            Op(kind="mkdir", dest="claude_memory"),
+            Op(kind="render_template",
+               source="templates/manuscript-memory-md.template",
+               dest="claude_memory/MEMORY.md",
+               extra={"vars": {}}),
+        ]
+        ok, log = self._run(plan)
+        self.assertTrue(ok, log)
+        self.assertTrue((self.root / "claude_memory" / "MEMORY.md").exists())
+        content = (self.root / "claude_memory" / "MEMORY.md").read_text()
+        self.assertIn("Project marker", content)
+
+    def test_write_json_creates_file(self):
+        from sws_init_project import Op
+        plan = [
+            Op(kind="mkdir", dest="claude_memory"),
+            Op(kind="write_json",
+               dest="claude_memory/passport.json",
+               extra={"content": {"cycle": 0}}),
+        ]
+        ok, log = self._run(plan)
+        self.assertTrue(ok, log)
+        data = json.loads((self.root / "claude_memory" / "passport.json").read_text())
+        self.assertEqual(data, {"cycle": 0})
+
+    def test_rollback_on_failed_op(self):
+        from sws_init_project import Op
+        (self.root / "paper.docx").write_bytes(b"original")
+        plan = [
+            Op(kind="mkdir", dest="Manuscript"),
+            Op(kind="mv", source="paper.docx", dest="Manuscript/paper.docx"),
+            # 3rd op intentionally invalid: source missing
+            Op(kind="mv", source="nonexistent_source", dest="anywhere"),
+        ]
+        ok, log = self._run(plan)
+        self.assertFalse(ok)
+        # rollback should restore paper.docx to root
+        self.assertTrue((self.root / "paper.docx").exists())
+        self.assertEqual((self.root / "paper.docx").read_bytes(), b"original")
+        # Manuscript/paper.docx should be gone
+        self.assertFalse((self.root / "Manuscript" / "paper.docx").exists())
+        # Manuscript/ dir is created by op 1; rollback removes it
+        self.assertFalse((self.root / "Manuscript").exists())
+
+    def test_rollback_does_not_remove_user_files(self):
+        from sws_init_project import Op
+        (self.root / "user_file.txt").write_text("hands off")
+        plan = [
+            Op(kind="mkdir", dest="Manuscript"),
+            Op(kind="mv", source="nonexistent", dest="anywhere"),
+        ]
+        ok, log = self._run(plan)
+        self.assertFalse(ok)
+        # User-pre-existing file untouched
+        self.assertEqual((self.root / "user_file.txt").read_text(), "hands off")
 
 
 if __name__ == "__main__":
