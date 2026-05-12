@@ -1,5 +1,5 @@
 {
-  "name": "scientific-writing-superpowers",
+  "name": "sws",
   "version": "0.0.1",
   "description": "DOCX-first scientific manuscript preparation toolkit for chemistry and biology labs. Recycles the superpowers brainstorming + planning + code-review trio and adds 24 SWS-original agents, 9 writing-context profiles, marker-scoped hooks, and a filesystem-index utility.",
   "author": {
