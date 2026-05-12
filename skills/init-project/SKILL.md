@@ -22,9 +22,20 @@ Do NOT invoke when:
 ## Step a — Argument resolution (3-tier waterfall)
 
 1. **Named args:** parse the slash-command invocation for any of:
-   `--article-type, --language, --format, --target-journal, --target-call, --first-author, --year, --co-authors, --notebooklm`
+   `--article-type, --language, --format, --target-journal, --target-call, --first-author, --year, --co-authors, --notebooklm, --c1, --c2, --c3, --c4, --c5, --c6`
 2. **Natural-language `$ARGUMENTS`:** if free text accompanies the slash command (e.g., `/sws:init-project Communication for ChemBioChem on hDF kinetics, first author Smith with co-authors`), parse it for any unset fields. Use the model's natural-language understanding; do not require structured syntax.
 3. **Interactive prompts:** for any required field still missing, prompt one at a time. Defaults come from `references/marker-schema.md` (`language: en`, `format: docx`, `notebooklm.enabled: false`). For `year`, default to the current system year.
+
+**Conflict override flags:** `--c1`..`--c6` each take a string value matching that conflict class's `options` list (e.g., `--c4=replace`, `--c4=append`, `--c4=skip`). These override the safe-default resolution computed in Step c. NL-parse counterparts:
+- "overwrite my CLAUDE.md" / "replace existing CLAUDE.md" → c4=replace
+- "skip the docx move" / "leave paper.docx where it is" → c1=skip
+- "replace my memory" / "overwrite claude_memory" → c5=replace
+- "skip the claude_material rename" → c3=skip
+- similar patterns apply for c2 and c6
+
+**Override validation:** If the user supplies a value not in the conflict's `options` list (e.g., `--c4=foobar`), abort before calling plan with: `Error: --c4=foobar is not a valid override. Valid options for C4: [replace, append, skip].`
+
+**Override for absent conflict:** If the user supplies `--c4=replace` but no CLAUDE.md exists (C4 not detected), silently ignore the override (no harm, no warning). Accepted v0.1 behavior.
 
 After arg resolution, slugify `first_author` and compute `short_handle = <slug> + ("_et_al_" if co_authors_present else "_") + <year>`.
 
@@ -46,35 +57,54 @@ Then scan the cwd for the 6 conflict classes:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" scan --root .
 ```
 
-The output is a JSON array of conflicts (each with `cls`, `path`, `suggested_action`, `options`). If empty, jump straight to step d (fresh-init). Otherwise proceed to step c.
+The output is a JSON array of conflicts (each with `cls`, `path`, `suggested_action`, `options`). Save it to `/tmp/sws_conflicts.json`. If empty, jump straight to step d (fresh-init). Otherwise compute safe-default resolutions:
 
-## Step c — Per-conflict prompts
-
-For each conflict in scan output, prompt the user with the suggested-default UX:
-
-```
-Found `paper.docx` at root. Move to `Manuscript/paper.docx`? [Y/n/skip/manual]
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" defaults \
+  --conflicts /tmp/sws_conflicts.json > /tmp/sws_defaults.json
 ```
 
-- `Y` (or empty input) = accept suggested action (resolution: `accept`).
-- `n` = reject suggested action (resolution: `reject`).
-- `skip` = leave the file alone, continue init (resolution: `skip`).
-- `manual` = abort the whole init for user-handled cleanup (exit cleanly, no disk writes).
+Then proceed to step c.
 
-For **C4 (existing CLAUDE.md)** the options are `[r]eplace / [a]ppend / [s]kip`:
-  - `replace` = overwrite user's CLAUDE.md with the SWS per-paper template. The user's existing content is lost (no automatic backup in v0.1).
-  - `append` = preserve the user's CLAUDE.md verbatim and append a marker-delimited `## SWS-managed` section at the end (cross-refs to plugin canonical references; pointer to `.sws-project.local.md` for project metadata). Idempotent on re-run: the HTML-comment markers let SWS replace the existing section instead of duplicating it. Recommended for hand-curated CLAUDE.md files.
-  - `skip` = leave the user's CLAUDE.md entirely untouched. SWS still writes the marker (`.sws-project.local.md`); agents reading via session auto-load get the user's existing CLAUDE.md as primary context.
+## Step c — Apply safe defaults + user overrides
 
-For **C5 (existing claude_memory/)** the options are `[k]eep / [r]eplace`:
-  - `keep` = leave user's claude_memory/ contents alone. SWS does NOT write MEMORY.md or passport.json. Use this if the user is migrating an existing claude_memory layout and wants to integrate manually.
-  - `replace` = overwrite `claude_memory/MEMORY.md` and `claude_memory/passport.json` only. Other files inside `claude_memory/` are preserved.
+For each detected conflict, SWS auto-resolves with a data-loss-safe default. The defaults table (single source of truth: `default_resolutions()` in `scripts/sws_init_project.py`):
 
-For **C6 (existing marker)** the options are `[proceed]` / `[abort]`. On `proceed`, load the existing marker's values, present them as defaults during the arg-resolution prompts, then write a merged marker.
+| Conflict | Default | What it does |
+|---|---|---|
+| C1 root `*.docx` | `accept` | Move to `Manuscript/<filename>` (reversible) |
+| C2 loose Figures | `accept` | Move loose figs to `Figures/main/` (reversible) |
+| C3 `claude_material/` | `accept` | Rename to `scratch/` (reversible) |
+| C4 existing CLAUDE.md | `append` | Preserve verbatim; append marker-delimited SWS-managed section (idempotent on re-run) |
+| C5 existing `claude_memory/` | `keep` | Leave `claude_memory/` untouched; SWS does NOT write `MEMORY.md` or `passport.json` |
+| C6 existing marker | `proceed` | Re-init flow: load existing values as defaults; write merged marker |
 
-**Note (v0.2 backlog):** Smarter merges deferred to v0.2 — `[m]ove` for C5 (rotate `claude_memory/` to `claude_memory/_archive/` then write fresh), frontmatter merge for existing YAML in user's CLAUDE.md, content-aware section placement. The v0.1 options ship the data-loss-safe defaults plus the `[a]ppend` smart-merge for the typical case (existing CLAUDE.md with hand-curated content).
+If the user passed any `--c1`..`--c6` flag in Step a OR if NL parse picked up an override signal, merge those overrides on top of the defaults:
 
-Build a `resolutions` dict mapping `cls` → user choice.
+```bash
+# Defaults from step b are at /tmp/sws_defaults.json. Apply overrides if any:
+python3 -c "
+import json, sys
+defaults = json.load(open('/tmp/sws_defaults.json'))
+overrides = {}  # populate from Step-a args / NL parse
+defaults.update(overrides)
+json.dump(defaults, open('/tmp/sws_resolutions.json', 'w'))
+"
+```
+
+**Validation:** Before writing `/tmp/sws_resolutions.json`, validate each override against the corresponding conflict's `options` list (from the scan output). If a value is invalid, abort with:
+
+```
+Error: --c4=foobar is not a valid override. Valid options for C4: [replace, append, skip].
+```
+
+**Destructive overrides:** `c4=replace` and `c5=replace` destroy user content. The skill MUST NOT default to these. They only fire when the user explicitly passed the flag or NL parse picked up an unambiguous signal. If the signal is ambiguous, fall back to the safe default and note it in the post-apply summary.
+
+No per-conflict prompts. The plan-presentation step (Step e) gives the user the single consolidated review.
+
+Build a `resolutions` dict at `/tmp/sws_resolutions.json` mapping `cls` → chosen resolution.
+
+**Note (v0.2 backlog):** Smarter merges deferred to v0.2 — `[m]ove` for C5 (rotate `claude_memory/` to `claude_memory/_archive/` then write fresh), frontmatter merge for existing YAML in user's CLAUDE.md, content-aware section placement, `--interactive` flag to opt back into per-conflict prompts.
 
 ## Step d — Plan assembly
 
@@ -91,7 +121,20 @@ The output is the ordered op list as JSON.
 
 ## Step e — Plan presentation
 
-Display the plan to the user as a numbered list before any disk write. Example format:
+Before showing the op list, surface what was auto-resolved:
+
+```
+Detected N conflicts; auto-resolved with safe defaults:
+  C4=append (preserves your CLAUDE.md; appends SWS-managed section)
+  C1=accept (moves paper.docx → Manuscript/paper.docx)
+  C3=accept (renames claude_material/ → scratch/)
+
+[If any user-supplied overrides were applied:]
+User-supplied overrides:
+  C4=replace (will overwrite your CLAUDE.md — confirm in plan below)
+```
+
+Then display the plan to the user as a numbered list before any disk write. Example format:
 
 ```
 Plan (12 ops):
@@ -137,19 +180,28 @@ Print summary:
 
 ```
 Bootstrapped <short_handle> at <cwd>.
-  N files created
-  M files relocated
-  article_type=<...>, language=<...>, format=<...>
-  target_journal=<...> | target_call=<...>
-  marker → .sws-project.local.md
-  per-paper context → CLAUDE.md, claude_memory/MEMORY.md
-  passport.json: cycle 0
-  fs_index.json: <count> files indexed
+
+What SWS did with your existing files:
+  - paper.docx → moved to Manuscript/paper.docx (C1=accept)
+  - claude_material/ → renamed to scratch/ (C3=accept)
+  - CLAUDE.md → preserved verbatim; SWS-managed section appended at end (C4=append)
+  [If C5=keep:]
+  - claude_memory/ → preserved verbatim; SWS did not write MEMORY.md or passport.json (C5=keep)
+  [If no user files were touched, omit this section entirely.]
+
+What SWS created fresh:
+  N files (full topology: Manuscript/, Figures/, Tables/, SI/, Zenodo_db/, scratch/, refs/, claude_memory/)
+  .sws-project.local.md (marker; canonical project metadata)
+  [If C4=replace was used:]  CLAUDE.md (SWS template; your previous CLAUDE.md was overwritten)
+  [If C5=replace was used:]  claude_memory/MEMORY.md, claude_memory/passport.json
+
+Configuration: article_type=<...>, language=<...>, format=<...>
+Target: target_journal=<...> | target_call=<...>
 
 Next steps (suggested):
-  - Run /sws:resolve-journal-style <slug> to cache the venue style overlay (cycle #4).
+  - Run /sws:resolve-journal-style <slug> to cache the venue style overlay (in a later cycle).
   - Drop your manuscript at Manuscript/<short_handle>.docx (or .tex).
-  - Start drafting (cycle #5 ships the drafter agent).
+  - Start drafting (ships in a later cycle).
 ```
 
 ## Edge cases (defer to spec)
