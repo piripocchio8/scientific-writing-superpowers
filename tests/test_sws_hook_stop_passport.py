@@ -1,5 +1,6 @@
 """Tests for sws_hook_stop_passport.py — pure stdlib + unittest."""
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -50,6 +51,27 @@ def _edit_event(file_path: str) -> dict:
     return {"tool_uses": [{"tool_name": "Edit", "tool_input": {"file_path": file_path}}]}
 
 
+def _transcript_event(transcript_path: str) -> dict:
+    return {"transcript_path": transcript_path}
+
+
+def _write_transcript(transcript_path: str, file_path: str) -> None:
+    """Write a minimal JSONL transcript with one Edit tool_use block."""
+    line = json.dumps({
+        "message": {
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "tool_use",
+                    "name": "Edit",
+                    "input": {"file_path": file_path, "old_string": "x", "new_string": "y"},
+                }
+            ],
+        }
+    })
+    Path(transcript_path).write_text(line + "\n")
+
+
 class TestStopPassport(unittest.TestCase):
     def test_no_op_when_no_marker(self):
         """Without a marker, hook exits 0 and passport is untouched."""
@@ -83,11 +105,13 @@ class TestStopPassport(unittest.TestCase):
             self.assertEqual(data["history"], [])
 
     def test_appends_entry_with_modified_files(self):
-        """When a file was modified, a history entry is appended."""
+        """When a file was modified (via transcript_path), a history entry is appended."""
         with tempfile.TemporaryDirectory() as tmp:
             passport_path = _setup(tmp)
             fp = str(Path(tmp) / "Manuscript" / "paper.docx")
-            result = _run_hook(_edit_event(fp), tmp)
+            transcript_file = str(Path(tmp) / "session.jsonl")
+            _write_transcript(transcript_file, fp)
+            result = _run_hook(_transcript_event(transcript_file), tmp)
             self.assertEqual(result.returncode, 0)
             data = json.loads(passport_path.read_text())
             self.assertEqual(len(data["history"]), 1)
@@ -99,6 +123,8 @@ class TestStopPassport(unittest.TestCase):
             self.assertIsNone(entry["next_step"])
             self.assertIsInstance(entry["file"], list)
             self.assertEqual(len(entry["file"]), 1)
+            # Path must be relative, not absolute.
+            self.assertFalse(Path(entry["file"][0]).is_absolute())
 
     def test_increments_cycle_number(self):
         """Each Stop call increments the cycle number."""
@@ -129,6 +155,50 @@ class TestStopPassport(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             # File should remain untouched (still corrupt)
             self.assertEqual(passport_path.read_text(), "NOT VALID JSON {{{{")
+
+
+    def test_extracts_from_legacy_tool_uses_event(self):
+        """Fallback: old event['tool_uses'] shape still extracts files when no transcript_path."""
+        with tempfile.TemporaryDirectory() as tmp:
+            passport_path = _setup(tmp)
+            fp = str(Path(tmp) / "paper.docx")
+            # No transcript_path — only the legacy tool_uses payload.
+            result = _run_hook(_edit_event(fp), tmp)
+            self.assertEqual(result.returncode, 0)
+            data = json.loads(passport_path.read_text())
+            self.assertEqual(len(data["history"]), 1)
+            entry = data["history"][0]
+            self.assertIsInstance(entry["file"], list)
+            self.assertEqual(len(entry["file"]), 1)
+            self.assertFalse(Path(entry["file"][0]).is_absolute())
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS-only: /tmp -> /private/tmp symlink")
+    def test_symlinked_paths_canonicalize_correctly(self):
+        """/tmp paths relativize correctly even when cwd resolves to /private/tmp."""
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            # On macOS, tmp is under /tmp but cwd.resolve() → /private/tmp/...
+            # Verify that the symlink actually differs before asserting the fix.
+            canonical = str(Path(tmp).resolve())
+            if tmp == canonical:
+                self.skipTest("/tmp and /private/tmp appear identical on this system")
+            passport_path = _setup(tmp)
+            manuscript_dir = Path(tmp) / "Manuscript"
+            manuscript_dir.mkdir()
+            fp = str(Path(tmp) / "Manuscript" / "paper.docx")
+            transcript_file = str(Path(tmp) / "session.jsonl")
+            _write_transcript(transcript_file, fp)
+            # Run the hook with cwd set to the /tmp-prefixed path.
+            result = _run_hook(_transcript_event(transcript_file), tmp)
+            self.assertEqual(result.returncode, 0)
+            data = json.loads(passport_path.read_text())
+            self.assertEqual(len(data["history"]), 1)
+            entry = data["history"][0]
+            self.assertIsInstance(entry["file"], list)
+            self.assertEqual(len(entry["file"]), 1)
+            # Must be relative, NOT an absolute /private/tmp/... leak.
+            self.assertFalse(Path(entry["file"][0]).is_absolute(),
+                             f"Expected relative path, got absolute: {entry['file'][0]}")
+            self.assertEqual(entry["file"][0], "Manuscript/paper.docx")
 
 
 if __name__ == "__main__":

@@ -63,35 +63,78 @@ def main() -> int:
 
 
 def _extract_modified_files(event: dict, cwd: Path) -> list:
-    """Extract relative paths of files edited/written during this session.
+    """Best-effort extraction of files edited/written during the session.
 
-    Probes multiple likely fields across Claude Code versions; falls back to
-    empty list if none found (E5 edge case).
+    Preferred path: parse event['transcript_path'] (JSONL of session messages).
+    Fallback: event['tool_uses'] or event['tool_calls'] (older / variant payloads).
     """
-    files = []
-    # Probe multiple candidate fields for portability across CC versions.
-    candidates = (
-        event.get("tool_uses")
-        or event.get("tool_calls")
-        or event.get("transcript")
-        or []
-    )
-    for entry in candidates:
-        tool_name = entry.get("tool_name") or entry.get("name", "")
-        if tool_name not in ("Edit", "Write", "MultiEdit"):
-            continue
-        tool_input = entry.get("tool_input") or entry.get("arguments", {})
-        fp = tool_input.get("file_path")
+    cwd_resolved = cwd.resolve()
+    files: list[str] = []
+
+    # Primary path: transcript file (canonical Claude Code Stop hook field).
+    transcript_path = event.get("transcript_path")
+    if transcript_path:
+        try:
+            with open(transcript_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        msg = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    files.extend(_extract_from_message(msg))
+        except (OSError, ValueError):
+            pass
+
+    # Fallback: direct tool-use list in event payload.
+    if not files:
+        candidates = event.get("tool_uses") or event.get("tool_calls") or []
+        for entry in candidates:
+            files.extend(_extract_from_tool_call_dict(entry))
+
+    # Canonicalize paths: resolve symlinks on both sides, then relativize.
+    out = []
+    for fp in files:
         if not fp:
             continue
         p = Path(fp)
         if p.is_absolute():
             try:
-                p = p.relative_to(cwd)
-            except ValueError:
+                p = p.resolve().relative_to(cwd_resolved)
+            except (ValueError, OSError):
                 pass
-        files.append(str(p))
-    return files
+        out.append(str(p))
+    return out
+
+
+def _extract_from_message(msg: dict) -> list[str]:
+    """Pull Edit/Write/MultiEdit file_path values from a single transcript message."""
+    result = []
+    # Transcript lines may wrap the message under a 'message' key or expose it directly.
+    inner = msg.get("message") if isinstance(msg.get("message"), dict) else msg
+    content = inner.get("content") if isinstance(inner, dict) else None
+    if not isinstance(content, list):
+        return result
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "tool_use" and block.get("name") in ("Edit", "Write", "MultiEdit"):
+            fp = (block.get("input") or {}).get("file_path")
+            if fp:
+                result.append(fp)
+    return result
+
+
+def _extract_from_tool_call_dict(entry: dict) -> list[str]:
+    """Pull file_path from a single tool_uses/tool_calls entry (older payload shape)."""
+    tool_name = entry.get("tool_name") or entry.get("name", "")
+    if tool_name not in ("Edit", "Write", "MultiEdit"):
+        return []
+    tool_input = entry.get("tool_input") or entry.get("arguments", {})
+    fp = tool_input.get("file_path")
+    return [fp] if fp else []
 
 
 if __name__ == "__main__":
