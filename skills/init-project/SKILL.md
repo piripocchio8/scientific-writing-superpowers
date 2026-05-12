@@ -57,35 +57,54 @@ Then scan the cwd for the 6 conflict classes:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" scan --root .
 ```
 
-The output is a JSON array of conflicts (each with `cls`, `path`, `suggested_action`, `options`). If empty, jump straight to step d (fresh-init). Otherwise proceed to step c.
+The output is a JSON array of conflicts (each with `cls`, `path`, `suggested_action`, `options`). Save it to `/tmp/sws_conflicts.json`. If empty, jump straight to step d (fresh-init). Otherwise compute safe-default resolutions:
 
-## Step c — Per-conflict prompts
-
-For each conflict in scan output, prompt the user with the suggested-default UX:
-
-```
-Found `paper.docx` at root. Move to `Manuscript/paper.docx`? [Y/n/skip/manual]
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" defaults \
+  --conflicts /tmp/sws_conflicts.json > /tmp/sws_defaults.json
 ```
 
-- `Y` (or empty input) = accept suggested action (resolution: `accept`).
-- `n` = reject suggested action (resolution: `reject`).
-- `skip` = leave the file alone, continue init (resolution: `skip`).
-- `manual` = abort the whole init for user-handled cleanup (exit cleanly, no disk writes).
+Then proceed to step c.
 
-For **C4 (existing CLAUDE.md)** the options are `[r]eplace / [a]ppend / [s]kip`:
-  - `replace` = overwrite user's CLAUDE.md with the SWS per-paper template. The user's existing content is lost (no automatic backup in v0.1).
-  - `append` = preserve the user's CLAUDE.md verbatim and append a marker-delimited `## SWS-managed` section at the end (cross-refs to plugin canonical references; pointer to `.sws-project.local.md` for project metadata). Idempotent on re-run: the HTML-comment markers let SWS replace the existing section instead of duplicating it. Recommended for hand-curated CLAUDE.md files.
-  - `skip` = leave the user's CLAUDE.md entirely untouched. SWS still writes the marker (`.sws-project.local.md`); agents reading via session auto-load get the user's existing CLAUDE.md as primary context.
+## Step c — Apply safe defaults + user overrides
 
-For **C5 (existing claude_memory/)** the options are `[k]eep / [r]eplace`:
-  - `keep` = leave user's claude_memory/ contents alone. SWS does NOT write MEMORY.md or passport.json. Use this if the user is migrating an existing claude_memory layout and wants to integrate manually.
-  - `replace` = overwrite `claude_memory/MEMORY.md` and `claude_memory/passport.json` only. Other files inside `claude_memory/` are preserved.
+For each detected conflict, SWS auto-resolves with a data-loss-safe default. The defaults table (single source of truth: `default_resolutions()` in `scripts/sws_init_project.py`):
 
-For **C6 (existing marker)** the options are `[proceed]` / `[abort]`. On `proceed`, load the existing marker's values, present them as defaults during the arg-resolution prompts, then write a merged marker.
+| Conflict | Default | What it does |
+|---|---|---|
+| C1 root `*.docx` | `accept` | Move to `Manuscript/<filename>` (reversible) |
+| C2 loose Figures | `accept` | Move loose figs to `Figures/main/` (reversible) |
+| C3 `claude_material/` | `accept` | Rename to `scratch/` (reversible) |
+| C4 existing CLAUDE.md | `append` | Preserve verbatim; append marker-delimited SWS-managed section (idempotent on re-run) |
+| C5 existing `claude_memory/` | `keep` | Leave `claude_memory/` untouched; SWS does NOT write `MEMORY.md` or `passport.json` |
+| C6 existing marker | `proceed` | Re-init flow: load existing values as defaults; write merged marker |
 
-**Note (v0.2 backlog):** Smarter merges deferred to v0.2 — `[m]ove` for C5 (rotate `claude_memory/` to `claude_memory/_archive/` then write fresh), frontmatter merge for existing YAML in user's CLAUDE.md, content-aware section placement. The v0.1 options ship the data-loss-safe defaults plus the `[a]ppend` smart-merge for the typical case (existing CLAUDE.md with hand-curated content).
+If the user passed any `--c1`..`--c6` flag in Step a OR if NL parse picked up an override signal, merge those overrides on top of the defaults:
 
-Build a `resolutions` dict mapping `cls` → user choice.
+```bash
+# Defaults from step b are at /tmp/sws_defaults.json. Apply overrides if any:
+python3 -c "
+import json, sys
+defaults = json.load(open('/tmp/sws_defaults.json'))
+overrides = {}  # populate from Step-a args / NL parse
+defaults.update(overrides)
+json.dump(defaults, open('/tmp/sws_resolutions.json', 'w'))
+"
+```
+
+**Validation:** Before writing `/tmp/sws_resolutions.json`, validate each override against the corresponding conflict's `options` list (from the scan output). If a value is invalid, abort with:
+
+```
+Error: --c4=foobar is not a valid override. Valid options for C4: [replace, append, skip].
+```
+
+**Destructive overrides:** `c4=replace` and `c5=replace` destroy user content. The skill MUST NOT default to these. They only fire when the user explicitly passed the flag or NL parse picked up an unambiguous signal. If the signal is ambiguous, fall back to the safe default and note it in the post-apply summary.
+
+No per-conflict prompts. The plan-presentation step (Step e) gives the user the single consolidated review.
+
+Build a `resolutions` dict at `/tmp/sws_resolutions.json` mapping `cls` → chosen resolution.
+
+**Note (v0.2 backlog):** Smarter merges deferred to v0.2 — `[m]ove` for C5 (rotate `claude_memory/` to `claude_memory/_archive/` then write fresh), frontmatter merge for existing YAML in user's CLAUDE.md, content-aware section placement, `--interactive` flag to opt back into per-conflict prompts.
 
 ## Step d — Plan assembly
 
