@@ -5,6 +5,7 @@ validate_inputs (Task 7), scan_conflicts (Task 8), build_plan
 (Task 9), apply_plan + rollback (Task 10).
 """
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -128,6 +129,75 @@ class TestValidateInputs(unittest.TestCase):
         ))
         self.assertFalse(ok)
         self.assertIn("co_authors_present", msg)
+
+
+class TestScanConflicts(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _classes(self, conflicts):
+        return sorted(c.cls for c in conflicts)
+
+    def test_empty_dir_no_conflicts(self):
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertEqual(conflicts, [])
+
+    def test_root_docx_detected_as_C1(self):
+        (self.root / "paper.docx").write_bytes(b"x")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].cls, "C1")
+        self.assertEqual(conflicts[0].path, "paper.docx")
+
+    def test_loose_figures_detected_as_C2(self):
+        (self.root / "Figures").mkdir()
+        (self.root / "Figures" / "fig1.png").write_bytes(b"x")
+        (self.root / "Figures" / "fig2.pdf").write_bytes(b"x")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertIn("C2", self._classes(conflicts))
+
+    def test_existing_main_subdir_suppresses_C2(self):
+        (self.root / "Figures" / "main").mkdir(parents=True)
+        (self.root / "Figures" / "main" / "fig1.png").write_bytes(b"x")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertNotIn("C2", self._classes(conflicts))
+
+    def test_claude_material_detected_as_C3(self):
+        (self.root / "claude_material").mkdir()
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertIn("C3", self._classes(conflicts))
+
+    def test_root_claude_md_detected_as_C4(self):
+        (self.root / "CLAUDE.md").write_text("# my notes")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertIn("C4", self._classes(conflicts))
+
+    def test_existing_claude_memory_detected_as_C5(self):
+        (self.root / "claude_memory").mkdir()
+        (self.root / "claude_memory" / "MEMORY.md").write_text("- one")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertIn("C5", self._classes(conflicts))
+
+    def test_existing_marker_detected_as_C6(self):
+        (self.root / ".sws-project.local.md").write_text("---\nsws_version: 0.1\n---")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertIn("C6", self._classes(conflicts))
+
+    def test_multiple_classes_detected_together(self):
+        (self.root / "paper.docx").write_bytes(b"x")
+        (self.root / "claude_material").mkdir()
+        (self.root / "CLAUDE.md").write_text("notes")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertEqual(self._classes(conflicts), ["C1", "C3", "C4"])
+
+    def test_conflict_has_suggested_action(self):
+        (self.root / "paper.docx").write_bytes(b"x")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        self.assertIn("Manuscript/", conflicts[0].suggested_action)
 
 
 if __name__ == "__main__":

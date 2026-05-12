@@ -15,6 +15,8 @@ CLI subcommands wrap these for skill invocation:
 """
 from __future__ import annotations
 import unicodedata
+from dataclasses import dataclass, field
+from pathlib import Path
 
 
 def slugify(name: str) -> str:
@@ -71,6 +73,14 @@ LANGUAGES = ("en", "it")
 FORMATS = ("docx", "latex")
 
 
+@dataclass
+class Conflict:
+    cls: str           # "C1".."C6"
+    path: str          # relative to project root
+    suggested_action: str
+    options: list = field(default_factory=list)
+
+
 def validate_inputs(inputs: dict) -> tuple[bool, str]:
     """Enforce Q5b conditional rules + enum validation.
 
@@ -121,3 +131,80 @@ def validate_inputs(inputs: dict) -> tuple[bool, str]:
             )
 
     return True, "ok"
+
+
+def scan_conflicts(root) -> list[Conflict]:
+    """Walk root for the 6 detection classes; return ordered Conflict list.
+
+    Class definitions per
+    docs/superpowers/specs/2026-05-08-cycle-02-init-project-design.md
+    locked_decisions.Q1_existing_files_behavior.detection_set.
+    """
+    root = Path(root)
+    conflicts: list[Conflict] = []
+
+    # C1: root *.docx
+    for docx in sorted(root.glob("*.docx")):
+        conflicts.append(Conflict(
+            cls="C1",
+            path=docx.name,
+            suggested_action=f"Move to Manuscript/{docx.name}",
+            options=["Y", "n", "skip", "manual"],
+        ))
+
+    # C2: loose Figures/* with no main/ or SI/ subfolder
+    figures_dir = root / "Figures"
+    if figures_dir.is_dir():
+        has_main = (figures_dir / "main").is_dir()
+        has_si = (figures_dir / "SI").is_dir()
+        if not (has_main or has_si):
+            loose = []
+            for ext in ("png", "jpg", "jpeg", "svg", "pdf"):
+                loose.extend(figures_dir.glob(f"*.{ext}"))
+            if loose:
+                conflicts.append(Conflict(
+                    cls="C2",
+                    path="Figures/",
+                    suggested_action="Move loose figures into Figures/main/",
+                    options=["Y", "n", "skip", "manual"],
+                ))
+
+    # C3: claude_material/
+    if (root / "claude_material").is_dir():
+        conflicts.append(Conflict(
+            cls="C3",
+            path="claude_material/",
+            suggested_action="Rename to scratch/",
+            options=["Y", "n", "skip", "manual"],
+        ))
+
+    # C4: existing root CLAUDE.md
+    if (root / "CLAUDE.md").is_file():
+        conflicts.append(Conflict(
+            cls="C4",
+            path="CLAUDE.md",
+            suggested_action="[r]eplace / [a]ppend (under '## SWS-managed' section) / [s]kip",
+            options=["replace", "append", "skip"],
+        ))
+
+    # C5: existing claude_memory/
+    if (root / "claude_memory").is_dir():
+        conflicts.append(Conflict(
+            cls="C5",
+            path="claude_memory/",
+            suggested_action="[k]eep / [m]ove to _archive/ / [r]eplace",
+            options=["keep", "move", "replace"],
+        ))
+
+    # C6: existing .sws-project.local.md
+    if (root / ".sws-project.local.md").is_file():
+        conflicts.append(Conflict(
+            cls="C6",
+            path=".sws-project.local.md",
+            suggested_action=(
+                "Re-init flow: load existing values, prompt edits per field, write merged"
+            ),
+            options=["proceed", "abort"],
+        ))
+
+    return conflicts
