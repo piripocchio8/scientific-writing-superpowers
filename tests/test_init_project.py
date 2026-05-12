@@ -200,5 +200,107 @@ class TestScanConflicts(unittest.TestCase):
         self.assertIn("Manuscript/", conflicts[0].suggested_action)
 
 
+class TestBuildPlan(unittest.TestCase):
+    def _base_inputs(self, **overrides):
+        defaults = {
+            "article_type": "communication",
+            "language": "en",
+            "format": "docx",
+            "target_journal": "chembiochem",
+            "target_call": None,
+            "first_author": "smith",
+            "year": 2026,
+            "co_authors_present": True,
+            "notebooklm_enabled": False,
+            "short_handle": "smith_et_al_2026",
+            "created_iso": "2026-05-08T12:00:00Z",
+        }
+        defaults.update(overrides)
+        return defaults
+
+    def test_fresh_init_no_conflicts_produces_mkdirs_and_renders(self):
+        plan = sws_init_project.build_plan(self._base_inputs(), conflicts=[], resolutions={})
+        kinds = [op.kind for op in plan]
+        self.assertIn("mkdir", kinds)
+        self.assertIn("render_template", kinds)
+        self.assertIn("write_json", kinds)
+        # mkdirs must come before any render that writes inside them
+        first_render = next(i for i, op in enumerate(plan) if op.kind == "render_template")
+        first_mkdir = next(i for i, op in enumerate(plan) if op.kind == "mkdir")
+        self.assertLess(first_mkdir, first_render)
+
+    def test_funding_proposal_creates_call_dir(self):
+        inputs = self._base_inputs(
+            article_type="funding-proposal",
+            target_journal=None,
+            target_call="prin-2025",
+        )
+        plan = sws_init_project.build_plan(inputs, conflicts=[], resolutions={})
+        mkdir_dests = [op.dest for op in plan if op.kind == "mkdir"]
+        self.assertIn("call", mkdir_dests)
+
+    def test_non_funding_does_not_create_call_dir(self):
+        plan = sws_init_project.build_plan(self._base_inputs(), conflicts=[], resolutions={})
+        mkdir_dests = [op.dest for op in plan if op.kind == "mkdir"]
+        self.assertNotIn("call", mkdir_dests)
+
+    def test_notebooklm_enabled_creates_nlm_uploads(self):
+        inputs = self._base_inputs(notebooklm_enabled=True)
+        plan = sws_init_project.build_plan(inputs, conflicts=[], resolutions={})
+        mkdir_dests = [op.dest for op in plan if op.kind == "mkdir"]
+        self.assertIn("refs/nlm_uploads", mkdir_dests)
+
+    def test_C1_accept_produces_mv_op(self):
+        from sws_init_project import Conflict
+        c = Conflict(cls="C1", path="paper.docx",
+                     suggested_action="Move to Manuscript/paper.docx",
+                     options=["Y", "n", "skip", "manual"])
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[c],
+            resolutions={"C1": "accept"},
+        )
+        mv_ops = [op for op in plan if op.kind == "mv"]
+        self.assertTrue(any(op.source == "paper.docx" and op.dest == "Manuscript/paper.docx"
+                            for op in mv_ops))
+
+    def test_C1_skip_produces_no_mv(self):
+        from sws_init_project import Conflict
+        c = Conflict(cls="C1", path="paper.docx",
+                     suggested_action="Move to Manuscript/paper.docx",
+                     options=["Y", "n", "skip", "manual"])
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[c],
+            resolutions={"C1": "skip"},
+        )
+        mv_ops = [op for op in plan if op.kind == "mv"]
+        self.assertFalse(any(op.source == "paper.docx" for op in mv_ops))
+
+    def test_C3_accept_renames_claude_material_to_scratch(self):
+        from sws_init_project import Conflict
+        c = Conflict(cls="C3", path="claude_material/",
+                     suggested_action="Rename to scratch/",
+                     options=["Y", "n", "skip", "manual"])
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[c],
+            resolutions={"C3": "accept"},
+        )
+        mv_ops = [op for op in plan if op.kind == "mv"]
+        self.assertTrue(any(op.source == "claude_material" and op.dest == "scratch"
+                            for op in mv_ops))
+
+    def test_template_render_ops_use_correct_template_paths(self):
+        plan = sws_init_project.build_plan(self._base_inputs(), conflicts=[], resolutions={})
+        renders = [op for op in plan if op.kind == "render_template"]
+        templates_used = {op.source for op in renders}
+        self.assertEqual(templates_used, {
+            "templates/sws-project-marker.template",
+            "templates/manuscript-claude-md.template",
+            "templates/manuscript-memory-md.template",
+        })
+
+
 if __name__ == "__main__":
     unittest.main()

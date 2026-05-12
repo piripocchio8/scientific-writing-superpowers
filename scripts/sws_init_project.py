@@ -208,3 +208,136 @@ def scan_conflicts(root) -> list[Conflict]:
         ))
 
     return conflicts
+
+
+@dataclass
+class Op:
+    kind: str       # mkdir | mv | render_template | copy | write_json
+    source: str = ""
+    dest: str = ""
+    reason: str = ""
+    extra: dict = field(default_factory=dict)
+
+
+# Base directories created unconditionally (per references/folder-topology.md)
+BASE_DIRS = (
+    "Manuscript",
+    "Manuscript/_journal-style",
+    "Manuscript/_archive",
+    "Figures",
+    "Figures/main",
+    "Figures/SI",
+    "Figures/_archive",
+    "Tables",
+    "Tables/_archive",
+    "SI",
+    "SI/SI_Figures",
+    "Zenodo_db",
+    "Zenodo_db/data",
+    "Zenodo_db/scripts",
+    "Zenodo_db/_archive",
+    "scratch",
+    "refs",
+    "claude_memory",
+)
+
+
+def build_plan(inputs: dict, conflicts: list = None, resolutions: dict = None) -> list[Op]:
+    """Assemble ordered op list for atomic apply.
+
+    Order:
+      1. mkdir base topology + conditional dirs (call/, refs/nlm_uploads/)
+      2. mv ops from conflict resolutions (in C1..C6 order)
+      3. render_template ops for marker, per-paper CLAUDE.md, MEMORY.md
+      4. write_json ops for passport.json (cycle 0)
+    """
+    conflicts = conflicts or []
+    resolutions = resolutions or {}
+    ops: list[Op] = []
+
+    # 1. Base directories
+    for d in BASE_DIRS:
+        ops.append(Op(kind="mkdir", dest=d, reason="base topology"))
+
+    # 1b. Conditional dirs
+    if inputs.get("article_type") == "funding-proposal":
+        ops.append(Op(kind="mkdir", dest="call", reason="article_type=funding-proposal"))
+    if inputs.get("notebooklm_enabled"):
+        ops.append(Op(kind="mkdir", dest="refs/nlm_uploads",
+                      reason="notebooklm.enabled=true"))
+
+    # 2. Conflict-resolution mv ops
+    for c in conflicts:
+        resolution = resolutions.get(c.cls, "skip")
+        if resolution in ("accept", "Y"):
+            if c.cls == "C1":
+                # paper.docx → Manuscript/paper.docx
+                src = c.path
+                dest = f"Manuscript/{c.path}"
+                ops.append(Op(kind="mv", source=src, dest=dest, reason=f"smart-merge C1 ({c.path})"))
+            elif c.cls == "C2":
+                # loose Figures/*.{png,...} → Figures/main/
+                ops.append(Op(kind="mv_glob", source="Figures/*.{png,jpg,jpeg,svg,pdf}",
+                              dest="Figures/main/", reason="smart-merge C2"))
+            elif c.cls == "C3":
+                ops.append(Op(kind="mv", source="claude_material", dest="scratch",
+                              reason="smart-merge C3 (legacy hDF rename)"))
+            # C4/C5/C6 use option-specific resolutions (replace/append/etc.) handled
+            # in the apply layer; for now, build_plan emits a placeholder marker.
+
+    # 3. render_template ops
+    ops.append(Op(
+        kind="render_template",
+        source="templates/sws-project-marker.template",
+        dest=".sws-project.local.md",
+        reason="marker file",
+        extra={"vars": _marker_vars(inputs)},
+    ))
+    ops.append(Op(
+        kind="render_template",
+        source="templates/manuscript-claude-md.template",
+        dest="CLAUDE.md",
+        reason="per-paper CLAUDE.md",
+        extra={"vars": _claude_md_vars(inputs)},
+    ))
+    ops.append(Op(
+        kind="render_template",
+        source="templates/manuscript-memory-md.template",
+        dest="claude_memory/MEMORY.md",
+        reason="per-paper MEMORY.md",
+        extra={"vars": {}},  # template uses no substitutions
+    ))
+
+    # 4. passport.json stub
+    ops.append(Op(
+        kind="write_json",
+        dest="claude_memory/passport.json",
+        reason="cycle 0 stub",
+        extra={"content": {"sws_version": "0.1", "cycle": 0, "history": []}},
+    ))
+
+    return ops
+
+
+def _marker_vars(inputs: dict) -> dict:
+    """Render-time vars dict for the marker template."""
+    return {
+        "article_type": inputs["article_type"],
+        "language": inputs["language"],
+        "format": inputs["format"],
+        "target_journal": inputs.get("target_journal") or "null",
+        "target_call": inputs.get("target_call") or "null",
+        "notebooklm_enabled": "true" if inputs["notebooklm_enabled"] else "false",
+        "created_iso": inputs["created_iso"],
+        "short_handle": inputs["short_handle"],
+    }
+
+
+def _claude_md_vars(inputs: dict) -> dict:
+    """Render-time vars dict for the per-paper CLAUDE.md template."""
+    return {
+        **_marker_vars(inputs),
+        "first_author": inputs["first_author"],
+        "year": str(inputs["year"]),
+        "co_authors_present": "true" if inputs["co_authors_present"] else "false",
+    }
