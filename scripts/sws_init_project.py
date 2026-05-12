@@ -60,3 +60,64 @@ def slugify(name: str) -> str:
     # Step 4: Keep only alphanumeric (strips apostrophes, hyphens, spaces, etc.)
     cleaned = "".join(c for c in result if c.isalnum())
     return cleaned.lower()
+
+
+ARTICLE_TYPES = (
+    "full-article", "communication", "perspective", "review-paper",
+    "mini-review", "editorial", "methodological-paper",
+    "commentary-reply", "funding-proposal",
+)
+LANGUAGES = ("en", "it")
+FORMATS = ("docx", "latex")
+
+
+def validate_inputs(inputs: dict) -> tuple[bool, str]:
+    """Enforce Q5b conditional rules + enum validation.
+
+    Returns (True, "ok") if inputs pass; (False, error_msg) otherwise.
+    """
+    article_type = inputs.get("article_type")
+    if article_type not in ARTICLE_TYPES:
+        return False, (
+            f"article_type must be one of {ARTICLE_TYPES}; got {article_type!r}"
+        )
+
+    language = inputs.get("language")
+    if language not in LANGUAGES:
+        return False, f"language must be one of {LANGUAGES}; got {language!r}"
+
+    fmt = inputs.get("format")
+    if fmt not in FORMATS:
+        return False, f"format must be one of {FORMATS}; got {fmt!r}"
+
+    co_authors = inputs.get("co_authors_present")
+    if not isinstance(co_authors, bool):
+        return False, (
+            f"co_authors_present must be bool; got {type(co_authors).__name__}"
+        )
+
+    target_journal = inputs.get("target_journal")
+    target_call = inputs.get("target_call")
+
+    if article_type == "funding-proposal":
+        if not target_call:
+            return False, (
+                "article_type=funding-proposal requires target_call"
+            )
+        if target_journal:
+            return False, (
+                "article_type=funding-proposal must have target_journal=null; "
+                f"got {target_journal!r}"
+            )
+    else:
+        if not target_journal:
+            return False, (
+                f"article_type={article_type} requires target_journal"
+            )
+        if target_call:
+            return False, (
+                f"article_type={article_type} must have target_call=null; "
+                f"got {target_call!r}"
+            )
+
+    return True, "ok"

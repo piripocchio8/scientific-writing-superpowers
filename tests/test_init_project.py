@@ -41,5 +41,94 @@ class TestSlugify(unittest.TestCase):
             sws_init_project.slugify("   ")
 
 
+class TestValidateInputs(unittest.TestCase):
+    def _base_inputs(self, **overrides):
+        defaults = {
+            "article_type": "communication",
+            "language": "en",
+            "format": "docx",
+            "target_journal": "chembiochem",
+            "target_call": None,
+            "first_author": "smith",
+            "year": 2026,
+            "co_authors_present": True,
+            "notebooklm_enabled": False,
+        }
+        defaults.update(overrides)
+        return defaults
+
+    def test_communication_with_journal_passes(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs())
+        self.assertTrue(ok, msg)
+
+    def test_funding_proposal_requires_call(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            article_type="funding-proposal",
+            target_journal=None,
+            target_call="prin-2025",
+        ))
+        self.assertTrue(ok, msg)
+
+    def test_communication_with_call_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            target_call="prin-2025",
+        ))
+        self.assertFalse(ok)
+        self.assertIn("target_call", msg)
+
+    def test_funding_proposal_with_journal_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            article_type="funding-proposal",
+            target_journal="chembiochem",
+            target_call="prin-2025",
+        ))
+        self.assertFalse(ok)
+        self.assertIn("target_journal", msg)
+
+    def test_funding_proposal_missing_call_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            article_type="funding-proposal",
+            target_journal=None,
+            target_call=None,
+        ))
+        self.assertFalse(ok)
+        self.assertIn("target_call", msg)
+
+    def test_non_funding_missing_journal_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            target_journal=None,
+        ))
+        self.assertFalse(ok)
+        self.assertIn("target_journal", msg)
+
+    def test_invalid_article_type_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            article_type="not-a-real-type",
+        ))
+        self.assertFalse(ok)
+        self.assertIn("article_type", msg)
+
+    def test_invalid_language_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            language="fr",
+        ))
+        self.assertFalse(ok)
+        self.assertIn("language", msg)
+
+    def test_invalid_format_fails(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            format="rtf",
+        ))
+        self.assertFalse(ok)
+        self.assertIn("format", msg)
+
+    def test_co_authors_present_must_be_bool(self):
+        ok, msg = sws_init_project.validate_inputs(self._base_inputs(
+            co_authors_present="yes",
+        ))
+        self.assertFalse(ok)
+        self.assertIn("co_authors_present", msg)
+
+
 if __name__ == "__main__":
     unittest.main()
