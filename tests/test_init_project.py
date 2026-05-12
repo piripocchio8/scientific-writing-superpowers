@@ -200,6 +200,12 @@ class TestScanConflicts(unittest.TestCase):
         conflicts = sws_init_project.scan_conflicts(self.root)
         self.assertIn("Manuscript/", conflicts[0].suggested_action)
 
+    def test_C4_options_include_append(self):
+        (self.root / "CLAUDE.md").write_text("# my notes")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        c4 = next(c for c in conflicts if c.cls == "C4")
+        self.assertIn("append", c4.options)
+
 
 class TestBuildPlan(unittest.TestCase):
     def _base_inputs(self, **overrides):
@@ -328,8 +334,8 @@ class TestBuildPlanResolutions(unittest.TestCase):
     def _c4(self):
         from sws_init_project import Conflict
         return Conflict(cls="C4", path="CLAUDE.md",
-                        suggested_action="[r]eplace with SWS template / [s]kip (leave file untouched)",
-                        options=["replace", "skip"])
+                        suggested_action="[r]eplace with SWS template / [a]ppend SWS-managed section / [s]kip (leave file untouched)",
+                        options=["replace", "append", "skip"])
 
     def _c5(self):
         from sws_init_project import Conflict
@@ -394,6 +400,20 @@ class TestBuildPlanResolutions(unittest.TestCase):
         write_json_dests = self._dests_of_kind(plan, "write_json")
         self.assertIn("claude_memory/MEMORY.md", render_dests)
         self.assertIn("claude_memory/passport.json", write_json_dests)
+
+    def test_C4_append_emits_append_op_and_omits_render(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c4()],
+            resolutions={"C4": "append"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        append_dests = self._dests_of_kind(plan, "append_sws_section")
+        self.assertNotIn("CLAUDE.md", render_dests)
+        self.assertIn("CLAUDE.md", append_dests)
+        # Marker + MEMORY/passport still emitted
+        self.assertIn(".sws-project.local.md", render_dests)
+        self.assertIn("claude_memory/MEMORY.md", render_dests)
 
     def test_C4_and_C5_both_skip_renders_only_marker(self):
         plan = sws_init_project.build_plan(
@@ -499,6 +519,86 @@ class TestApplyPlan(unittest.TestCase):
         self.assertFalse(ok)
         # User-pre-existing file untouched
         self.assertEqual((self.root / "user_file.txt").read_text(), "hands off")
+
+
+class TestAppendSwsSection(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.plugin_root = Path(__file__).resolve().parent.parent
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, plan):
+        return sws_init_project.apply_plan(
+            plan, project_root=self.root, plugin_root=self.plugin_root,
+        )
+
+    def test_append_sws_section_to_file_without_markers(self):
+        from sws_init_project import Op, SWS_MARKER_OPEN, SWS_MARKER_CLOSE
+        (self.root / "CLAUDE.md").write_text("# user notes\n\nexisting content\n")
+        plan = [Op(kind="append_sws_section", dest="CLAUDE.md",
+                   extra={"short_handle": "smith_et_al_2026"})]
+        ok, log = self._run(plan)
+        self.assertTrue(ok, log)
+        content = (self.root / "CLAUDE.md").read_text()
+        self.assertIn("# user notes", content)
+        self.assertIn("existing content", content)
+        self.assertIn(SWS_MARKER_OPEN, content)
+        self.assertIn(SWS_MARKER_CLOSE, content)
+        self.assertIn("smith_et_al_2026", content)
+        # User content comes before SWS section
+        self.assertLess(content.index("existing content"), content.index(SWS_MARKER_OPEN))
+
+    def test_append_sws_section_with_existing_markers_replaces_idempotently(self):
+        from sws_init_project import Op, SWS_MARKER_OPEN, SWS_MARKER_CLOSE
+        initial = (
+            "# user notes\n\n"
+            f"{SWS_MARKER_OPEN}\n\nold sws block with old_handle\n\n{SWS_MARKER_CLOSE}\n"
+            "\nmore user content below\n"
+        )
+        (self.root / "CLAUDE.md").write_text(initial)
+        plan = [Op(kind="append_sws_section", dest="CLAUDE.md",
+                   extra={"short_handle": "new_handle_2027"})]
+        ok, log = self._run(plan)
+        self.assertTrue(ok, log)
+        content = (self.root / "CLAUDE.md").read_text()
+        # Old block content gone
+        self.assertNotIn("old sws block with old_handle", content)
+        # New short_handle in
+        self.assertIn("new_handle_2027", content)
+        # User content surrounding the markers preserved
+        self.assertIn("# user notes", content)
+        self.assertIn("more user content below", content)
+        # Exactly one open marker and one close marker
+        self.assertEqual(content.count(SWS_MARKER_OPEN), 1)
+        self.assertEqual(content.count(SWS_MARKER_CLOSE), 1)
+
+    def test_append_sws_section_rollback_restores_original(self):
+        from sws_init_project import Op
+        original = "# original user content\n"
+        (self.root / "CLAUDE.md").write_text(original)
+        plan = [
+            Op(kind="append_sws_section", dest="CLAUDE.md",
+               extra={"short_handle": "smith_2026"}),
+            # Force a failure on a subsequent op so rollback kicks in
+            Op(kind="mv", source="nonexistent", dest="anywhere"),
+        ]
+        ok, log = self._run(plan)
+        self.assertFalse(ok)
+        # CLAUDE.md restored to original
+        self.assertEqual((self.root / "CLAUDE.md").read_text(), original)
+
+    def test_append_sws_section_fails_if_claude_md_missing(self):
+        from sws_init_project import Op
+        plan = [Op(kind="append_sws_section", dest="CLAUDE.md",
+                   extra={"short_handle": "smith_2026"})]
+        ok, log = self._run(plan)
+        self.assertFalse(ok)
+        # The error message should mention CLAUDE.md or that the file is missing
+        self.assertTrue(any("CLAUDE.md" in line or "not found" in line for line in log),
+                        f"Expected failure log to mention missing file; got {log}")
 
 
 if __name__ == "__main__":
