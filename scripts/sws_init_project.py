@@ -376,6 +376,32 @@ def _build_sws_section(short_handle: str) -> str:
     )
 
 
+# Safe-default resolution per conflict class. Defaults are data-loss-safe:
+# - accept = reversible mv/rename ops (C1/C2/C3)
+# - append = non-destructive merge (C4)
+# - keep = leave user files untouched (C5)
+# - proceed = re-init flow loads existing values as defaults (C6)
+# Destructive options (replace) NEVER appear as defaults; they require
+# explicit user opt-in via CLI flag or NL signal.
+SAFE_DEFAULTS = {
+    "C1": "accept",
+    "C2": "accept",
+    "C3": "accept",
+    "C4": "append",
+    "C5": "keep",
+    "C6": "proceed",
+}
+
+
+def default_resolutions(conflicts) -> dict:
+    """Return the safe-default resolution dict for a list of Conflicts.
+
+    Keyed by conflict class (C1..C6). Any class not listed in SAFE_DEFAULTS
+    is omitted from the result (caller should escalate to prompt).
+    """
+    return {c.cls: SAFE_DEFAULTS[c.cls] for c in conflicts if c.cls in SAFE_DEFAULTS}
+
+
 def _marker_vars(inputs: dict) -> dict:
     """Render-time vars dict for the marker template."""
     return {
@@ -550,6 +576,13 @@ def _rollback_op(op, project_root) -> None:
             target.write_text(original)
 
 
+def _cli_defaults(args):
+    conflicts_data = json.loads(Path(args.conflicts).read_text())
+    conflicts = [Conflict(**c) for c in conflicts_data]
+    print(json.dumps(default_resolutions(conflicts), indent=2))
+    return 0
+
+
 def _cli_scan(args):
     conflicts = scan_conflicts(args.root)
     print(json.dumps([
@@ -590,6 +623,10 @@ def _cli_apply(args):
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_defaults = sub.add_parser("defaults")
+    p_defaults.add_argument("--conflicts", required=True)
+    p_defaults.set_defaults(func=_cli_defaults)
 
     p_scan = sub.add_parser("scan")
     p_scan.add_argument("--root", default=".")

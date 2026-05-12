@@ -601,5 +601,63 @@ class TestAppendSwsSection(unittest.TestCase):
                         f"Expected failure log to mention missing file; got {log}")
 
 
+class TestDefaultResolutions(unittest.TestCase):
+    """Verify safe-default resolution for each conflict class.
+
+    Defaults are data-loss-safe: accept/append/keep/proceed only.
+    Destructive options (replace) never appear in defaults.
+    """
+    def _conflict(self, cls, **kwargs):
+        from sws_init_project import Conflict
+        defaults = {"path": "x", "suggested_action": "x", "options": []}
+        defaults.update(kwargs)
+        return Conflict(cls=cls, **defaults)
+
+    def test_C1_defaults_to_accept(self):
+        d = sws_init_project.default_resolutions([self._conflict("C1")])
+        self.assertEqual(d, {"C1": "accept"})
+
+    def test_C2_defaults_to_accept(self):
+        d = sws_init_project.default_resolutions([self._conflict("C2")])
+        self.assertEqual(d, {"C2": "accept"})
+
+    def test_C3_defaults_to_accept(self):
+        d = sws_init_project.default_resolutions([self._conflict("C3")])
+        self.assertEqual(d, {"C3": "accept"})
+
+    def test_C4_defaults_to_append_not_replace(self):
+        d = sws_init_project.default_resolutions([self._conflict("C4")])
+        self.assertEqual(d, {"C4": "append"})
+        # Make sure we don't default to the destructive option
+        self.assertNotEqual(d["C4"], "replace")
+
+    def test_C5_defaults_to_keep_not_replace(self):
+        d = sws_init_project.default_resolutions([self._conflict("C5")])
+        self.assertEqual(d, {"C5": "keep"})
+        self.assertNotEqual(d["C5"], "replace")
+
+    def test_C6_defaults_to_proceed(self):
+        d = sws_init_project.default_resolutions([self._conflict("C6")])
+        self.assertEqual(d, {"C6": "proceed"})
+
+    def test_all_six_classes_together(self):
+        d = sws_init_project.default_resolutions([
+            self._conflict("C1"), self._conflict("C2"), self._conflict("C3"),
+            self._conflict("C4"), self._conflict("C5"), self._conflict("C6"),
+        ])
+        self.assertEqual(d, {
+            "C1": "accept", "C2": "accept", "C3": "accept",
+            "C4": "append", "C5": "keep", "C6": "proceed",
+        })
+
+    def test_empty_conflicts_returns_empty_dict(self):
+        self.assertEqual(sws_init_project.default_resolutions([]), {})
+
+    def test_unknown_class_is_omitted(self):
+        """Forward-compat: a class not in SAFE_DEFAULTS is skipped, not raised."""
+        d = sws_init_project.default_resolutions([self._conflict("C99")])
+        self.assertEqual(d, {})
+
+
 if __name__ == "__main__":
     unittest.main()
