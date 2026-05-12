@@ -22,9 +22,20 @@ Do NOT invoke when:
 ## Step a — Argument resolution (3-tier waterfall)
 
 1. **Named args:** parse the slash-command invocation for any of:
-   `--article-type, --language, --format, --target-journal, --target-call, --first-author, --year, --co-authors, --notebooklm`
+   `--article-type, --language, --format, --target-journal, --target-call, --first-author, --year, --co-authors, --notebooklm, --c1, --c2, --c3, --c4, --c5, --c6`
 2. **Natural-language `$ARGUMENTS`:** if free text accompanies the slash command (e.g., `/sws:init-project Communication for ChemBioChem on hDF kinetics, first author Smith with co-authors`), parse it for any unset fields. Use the model's natural-language understanding; do not require structured syntax.
 3. **Interactive prompts:** for any required field still missing, prompt one at a time. Defaults come from `references/marker-schema.md` (`language: en`, `format: docx`, `notebooklm.enabled: false`). For `year`, default to the current system year.
+
+**Conflict override flags:** `--c1`..`--c6` each take a string value matching that conflict class's `options` list (e.g., `--c4=replace`, `--c4=append`, `--c4=skip`). These override the safe-default resolution computed in Step c. NL-parse counterparts:
+- "overwrite my CLAUDE.md" / "replace existing CLAUDE.md" → c4=replace
+- "skip the docx move" / "leave paper.docx where it is" → c1=skip
+- "replace my memory" / "overwrite claude_memory" → c5=replace
+- "skip the claude_material rename" → c3=skip
+- similar patterns apply for c2 and c6
+
+**Override validation:** If the user supplies a value not in the conflict's `options` list (e.g., `--c4=foobar`), abort before calling plan with: `Error: --c4=foobar is not a valid override. Valid options for C4: [replace, append, skip].`
+
+**Override for absent conflict:** If the user supplies `--c4=replace` but no CLAUDE.md exists (C4 not detected), silently ignore the override (no harm, no warning). Accepted v0.1 behavior.
 
 After arg resolution, slugify `first_author` and compute `short_handle = <slug> + ("_et_al_" if co_authors_present else "_") + <year>`.
 
