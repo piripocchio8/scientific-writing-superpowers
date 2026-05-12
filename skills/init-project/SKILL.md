@@ -121,7 +121,20 @@ The output is the ordered op list as JSON.
 
 ## Step e — Plan presentation
 
-Display the plan to the user as a numbered list before any disk write. Example format:
+Before showing the op list, surface what was auto-resolved:
+
+```
+Detected N conflicts; auto-resolved with safe defaults:
+  C4=append (preserves your CLAUDE.md; appends SWS-managed section)
+  C1=accept (moves paper.docx → Manuscript/paper.docx)
+  C3=accept (renames claude_material/ → scratch/)
+
+[If any user-supplied overrides were applied:]
+User-supplied overrides:
+  C4=replace (will overwrite your CLAUDE.md — confirm in plan below)
+```
+
+Then display the plan to the user as a numbered list before any disk write. Example format:
 
 ```
 Plan (12 ops):
@@ -167,19 +180,28 @@ Print summary:
 
 ```
 Bootstrapped <short_handle> at <cwd>.
-  N files created
-  M files relocated
-  article_type=<...>, language=<...>, format=<...>
-  target_journal=<...> | target_call=<...>
-  marker → .sws-project.local.md
-  per-paper context → CLAUDE.md, claude_memory/MEMORY.md
-  passport.json: cycle 0
-  fs_index.json: <count> files indexed
+
+What SWS did with your existing files:
+  - paper.docx → moved to Manuscript/paper.docx (C1=accept)
+  - claude_material/ → renamed to scratch/ (C3=accept)
+  - CLAUDE.md → preserved verbatim; SWS-managed section appended at end (C4=append)
+  [If C5=keep:]
+  - claude_memory/ → preserved verbatim; SWS did not write MEMORY.md or passport.json (C5=keep)
+  [If no user files were touched, omit this section entirely.]
+
+What SWS created fresh:
+  N files (full topology: Manuscript/, Figures/, Tables/, SI/, Zenodo_db/, scratch/, refs/, claude_memory/)
+  .sws-project.local.md (marker; canonical project metadata)
+  [If C4=replace was used:]  CLAUDE.md (SWS template; your previous CLAUDE.md was overwritten)
+  [If C5=replace was used:]  claude_memory/MEMORY.md, claude_memory/passport.json
+
+Configuration: article_type=<...>, language=<...>, format=<...>
+Target: target_journal=<...> | target_call=<...>
 
 Next steps (suggested):
-  - Run /sws:resolve-journal-style <slug> to cache the venue style overlay (cycle #4).
+  - Run /sws:resolve-journal-style <slug> to cache the venue style overlay (in a later cycle).
   - Drop your manuscript at Manuscript/<short_handle>.docx (or .tex).
-  - Start drafting (cycle #5 ships the drafter agent).
+  - Start drafting (ships in a later cycle).
 ```
 
 ## Edge cases (defer to spec)
