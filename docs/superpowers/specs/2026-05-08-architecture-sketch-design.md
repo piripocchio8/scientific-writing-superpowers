@@ -180,7 +180,7 @@ Base layout, every SWS-bootstrapped project gets this:
 
 Conditional additions, triggered by profile or opt-in flags:
 
-- **`call/`** at root, created **only when `active_profile == funding-proposal`**. Holds call rules, eligibility/expense rules, deadlines, evaluation criteria, official call PDFs, lab-of-origin requirements. Persists after profile change (user may still need it for revisions or grant reports).
+- **`call/`** at root, created **only when `article_type == funding-proposal`**. Holds call rules, eligibility/expense rules, deadlines, evaluation criteria, official call PDFs, lab-of-origin requirements. Persists after profile change (user may still need it for revisions or grant reports).
 - **`refs/nlm_uploads/`**, created **only when `notebooklm.enabled: true` in `.sws-project.local.md`**. Curated corpus of files (PDFs, prior notes, draft sections, related papers) for `nlm-librarian` ingestion.
 
 ### Naming and conventions (locked)
@@ -203,7 +203,7 @@ Any file with the same name in plugin repo vs user manuscript project gets expli
 ```yaml
 ---
 sws_version: 0.1
-active_profile: communication        # one of the 9 profiles
+article_type: communication        # one of the 9 profiles
 language: en                         # default; opt-in via `language: it` (v0.1: en|it)
 format: docx                         # default; opt-in via `format: latex` (v0.1: docx|latex)
 target_journal: chembiochem          # null until /sws:resolve-journal-style runs
@@ -277,7 +277,7 @@ Definitive v0.1 list (7 agents): `drafter`, `methods-writer`, `reviser`, `style-
 
 `full-article`, `communication`, `perspective`, `review-paper`, `mini-review`, `editorial`, `methodological-paper`, `commentary-reply`, `funding-proposal`.
 
-The conditional `call/` folder triggers on `active_profile == funding-proposal`. Agent names containing "proposal" (`proposal-budget-helper`, `proposal-compliance-helper`) keep their names; "proposal" describes a job, not a profile-binding.
+The conditional `call/` folder triggers on `article_type == funding-proposal`. Agent names containing "proposal" (`proposal-budget-helper`, `proposal-compliance-helper`) keep their names; "proposal" describes a job, not a profile-binding.
 
 ### Profile delivery format
 
@@ -320,7 +320,7 @@ Explicit user-invoked slash command. Path:
 2. WebFetch on the journal's guide-for-authors.
 3. Generate `<paper-root>/Manuscript/_journal-style/<slug>.md` — inherits from active profile, overrides journal-specific fields (word/ref limits, abstract style, figure count, supplementary policy, optional `latex_class:` path).
 4. Cache. Re-fetch only on user re-invocation. No automatic TTL refresh in v0.1.
-5. SessionStart hook (one of the three MVP hooks) prints one read-only line if no overlay is cached and `active_profile != funding-proposal`. No fetching inside hooks or agents.
+5. SessionStart hook (one of the three MVP hooks) prints one read-only line if no overlay is cached and `article_type != funding-proposal`. No fetching inside hooks or agents.
 
 Agents read the resolved overlay path; if missing, they prompt the user with the exact slash-command line rather than fetching themselves.
 
@@ -342,7 +342,7 @@ User-supplied call source files live at `call/<filename>` (no underscore prefix)
 
 Three-layer resolution: **journal-or-call overlay > profile > schema defaults**. Each layer overrides the prior. Agents read the resolved overlay file and never the bare profile, so behavior is deterministic regardless of whether an overlay exists.
 
-When a `drafter` or `reviser` opens, it reads `Manuscript/_journal-style/<slug>.md` (or `call/_call-style/<call-slug>.md` for proposals); falls back to `profiles/<active_profile>.md`; falls back to schema defaults at `references/profile-schema.md`. No agent hardcodes word counts, section names, or citation styles.
+When a `drafter` or `reviser` opens, it reads `Manuscript/_journal-style/<slug>.md` (or `call/_call-style/<call-slug>.md` for proposals); falls back to `profiles/<article_type>.md`; falls back to schema defaults at `references/profile-schema.md`. No agent hardcodes word counts, section names, or citation styles.
 
 ---
 
@@ -361,7 +361,7 @@ Fires on `*.docx` always; extends to `*.{tex,bib,cls}` when the marker has `form
 On every Stop, writes `claude_memory/passport.json` capturing the cycle's provenance: agent, file touched, change summary, next-step pointer. Material Passport pattern adapted from Imbad0202. Cold restarts read the passport instead of replaying the session.
 
 **(d) SessionStart passport reload + journal-style nudge.**
-On SessionStart, reads `claude_memory/passport.json` and prints a one-line "where you left off" summary. If `active_profile != funding-proposal` and no journal-style overlay is cached, also prints one read-only line: `💡 No journal style cached. Run /sws:resolve-journal-style <slug> when ready.` No fetch, no blocking.
+On SessionStart, reads `claude_memory/passport.json` and prints a one-line "where you left off" summary. If `article_type != funding-proposal` and no journal-style overlay is cached, also prints one read-only line: `💡 No journal style cached. Run /sws:resolve-journal-style <slug> when ready.` No fetch, no blocking.
 
 ### Deferred hooks (v0.2 backlog)
 

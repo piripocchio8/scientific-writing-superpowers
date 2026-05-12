@@ -14,7 +14,7 @@ schema:
     type: string
     valid: ["0.1"]
     default: "0.1"
-  active_profile:
+  article_type:
     required: true
     type: string
     valid: [full-article, communication, perspective, review-paper, mini-review, editorial, methodological-paper, commentary-reply, funding-proposal]
@@ -56,7 +56,7 @@ schema:
     populated_by: /sws:init-project
 
 conditional_triggers:
-  call/_directory: { when: "active_profile == funding-proposal", persists_across_profile_change: true }
+  call/_directory: { when: "article_type == funding-proposal", persists_across_profile_change: true }
   refs/nlm_uploads/: { when: "notebooklm.enabled == true" }
   format_aware_agents_use_latex: { when: "format == latex", consumers: [drafter, reviser, style-enforcer, format-checker, table-formatter, equation-handler, figure-caption-writer] }
   pre_edit_backup_extends_to_tex_bib_cls: { when: "format == latex" }
@@ -64,7 +64,7 @@ conditional_triggers:
 example: |
   ---
   sws_version: 0.1
-  active_profile: communication
+  article_type: communication
   language: en
   format: docx
   target_journal: chembiochem

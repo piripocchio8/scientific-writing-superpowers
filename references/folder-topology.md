@@ -24,7 +24,7 @@ base_layout:
 
 conditional:
   call/:
-    trigger: active_profile == funding-proposal
+    trigger: article_type == funding-proposal
     persists_after_profile_change: true
     role: call rules, eligibility/expense rules, deadlines, evaluation criteria, official call PDFs, lab-of-origin requirements
     note: not deleted when user switches profile — may still be needed for revisions or grant reports

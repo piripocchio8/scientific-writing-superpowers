@@ -1,0 +1,29 @@
+---
+sws_project:
+  article_type: ${article_type}
+  language: ${language}
+  format: ${format}
+  target_journal: ${target_journal}
+  target_call: ${target_call}
+  first_author: ${first_author}
+  year: ${year}
+  co_authors_present: ${co_authors_present}
+  short_handle: ${short_handle}
+  notebooklm_enabled: ${notebooklm_enabled}
+  created: ${created_iso}
+---
+
+# ${short_handle}
+
+SWS-bootstrapped manuscript project.
+
+## Where to find context
+
+- `.sws-project.local.md` — active SWS settings (article_type, language, format, target journal/call, NLM opt-in).
+- `claude_memory/MEMORY.md` — session-state index; update as you work.
+- `Manuscript/_journal-style/<slug>.md` — journal-specific overlay (run `/sws:resolve-journal-style` if missing).
+- SWS plugin canonical references: `references/folder-topology.md`, `references/marker-schema.md`, `references/docx-style.md`, `references/python-env.md`.
+
+## Per-paper notes
+
+(add anything specific to this paper — collaborators, lab-specific conventions, in-flight reviewer comments, etc.)
