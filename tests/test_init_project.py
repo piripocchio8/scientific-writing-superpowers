@@ -303,6 +303,110 @@ class TestBuildPlan(unittest.TestCase):
         })
 
 
+class TestBuildPlanResolutions(unittest.TestCase):
+    """Verify C4/C5 resolutions gate the corresponding render/write ops.
+
+    Regression coverage for the data-loss bug surfaced in Task 12 smoke test.
+    """
+    def _base_inputs(self, **overrides):
+        defaults = {
+            "article_type": "communication",
+            "language": "en",
+            "format": "docx",
+            "target_journal": "chembiochem",
+            "target_call": None,
+            "first_author": "smith",
+            "year": 2026,
+            "co_authors_present": True,
+            "notebooklm_enabled": False,
+            "short_handle": "smith_et_al_2026",
+            "created_iso": "2026-05-08T12:00:00Z",
+        }
+        defaults.update(overrides)
+        return defaults
+
+    def _c4(self):
+        from sws_init_project import Conflict
+        return Conflict(cls="C4", path="CLAUDE.md",
+                        suggested_action="[r]eplace with SWS template / [s]kip (leave file untouched)",
+                        options=["replace", "skip"])
+
+    def _c5(self):
+        from sws_init_project import Conflict
+        return Conflict(cls="C5", path="claude_memory/",
+                        suggested_action="[k]eep existing (no SWS writes inside) / [r]eplace MEMORY.md + passport.json only",
+                        options=["keep", "replace"])
+
+    def _dests_of_kind(self, plan, kind):
+        return [op.dest for op in plan if op.kind == kind]
+
+    def test_fresh_init_emits_all_renders(self):
+        plan = sws_init_project.build_plan(self._base_inputs(), conflicts=[], resolutions={})
+        render_dests = self._dests_of_kind(plan, "render_template")
+        write_json_dests = self._dests_of_kind(plan, "write_json")
+        self.assertIn(".sws-project.local.md", render_dests)
+        self.assertIn("CLAUDE.md", render_dests)
+        self.assertIn("claude_memory/MEMORY.md", render_dests)
+        self.assertIn("claude_memory/passport.json", write_json_dests)
+
+    def test_C4_skip_omits_claude_md_render(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c4()],
+            resolutions={"C4": "skip"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        self.assertNotIn("CLAUDE.md", render_dests)
+        # Marker and MEMORY still rendered
+        self.assertIn(".sws-project.local.md", render_dests)
+        self.assertIn("claude_memory/MEMORY.md", render_dests)
+
+    def test_C4_replace_emits_claude_md_render(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c4()],
+            resolutions={"C4": "replace"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        self.assertIn("CLAUDE.md", render_dests)
+
+    def test_C5_keep_omits_memory_render_and_passport(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c5()],
+            resolutions={"C5": "keep"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        write_json_dests = self._dests_of_kind(plan, "write_json")
+        self.assertNotIn("claude_memory/MEMORY.md", render_dests)
+        self.assertNotIn("claude_memory/passport.json", write_json_dests)
+        # Marker and CLAUDE.md still rendered
+        self.assertIn(".sws-project.local.md", render_dests)
+        self.assertIn("CLAUDE.md", render_dests)
+
+    def test_C5_replace_emits_memory_render_and_passport(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c5()],
+            resolutions={"C5": "replace"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        write_json_dests = self._dests_of_kind(plan, "write_json")
+        self.assertIn("claude_memory/MEMORY.md", render_dests)
+        self.assertIn("claude_memory/passport.json", write_json_dests)
+
+    def test_C4_and_C5_both_skip_renders_only_marker(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c4(), self._c5()],
+            resolutions={"C4": "skip", "C5": "keep"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        write_json_dests = self._dests_of_kind(plan, "write_json")
+        self.assertEqual(render_dests, [".sws-project.local.md"])
+        self.assertEqual(write_json_dests, [])
+
+
 class TestApplyPlan(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

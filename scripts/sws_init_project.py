@@ -187,8 +187,8 @@ def scan_conflicts(root) -> list[Conflict]:
         conflicts.append(Conflict(
             cls="C4",
             path="CLAUDE.md",
-            suggested_action="[r]eplace / [a]ppend (under '## SWS-managed' section) / [s]kip",
-            options=["replace", "append", "skip"],
+            suggested_action="[r]eplace with SWS template / [s]kip (leave file untouched)",
+            options=["replace", "skip"],
         ))
 
     # C5: existing claude_memory/
@@ -196,8 +196,8 @@ def scan_conflicts(root) -> list[Conflict]:
         conflicts.append(Conflict(
             cls="C5",
             path="claude_memory/",
-            suggested_action="[k]eep / [m]ove to _archive/ / [r]eplace",
-            options=["keep", "move", "replace"],
+            suggested_action="[k]eep existing (no SWS writes inside) / [r]eplace MEMORY.md + passport.json only",
+            options=["keep", "replace"],
         ))
 
     # C6: existing .sws-project.local.md
@@ -289,7 +289,14 @@ def build_plan(inputs: dict, conflicts: list = None, resolutions: dict = None) -
             # C4/C5/C6 use option-specific resolutions (replace/append/etc.) handled
             # in the apply layer; for now, build_plan emits a placeholder marker.
 
+    # Resolution gates — C4/C5 control whether SWS writes inside their conflict area.
+    # Default to None (no conflict present) when no entry, meaning fresh-init → write.
+    c4_resolution = resolutions.get("C4")  # None if no C4 conflict, else "replace"|"skip"
+    c5_resolution = resolutions.get("C5")  # None if no C5 conflict, else "replace"|"keep"
+
     # 3. render_template ops
+
+    # Marker: always render (C6=abort gates the whole flow at the skill level, not here).
     ops.append(Op(
         kind="render_template",
         source="templates/sws-project-marker.template",
@@ -297,28 +304,35 @@ def build_plan(inputs: dict, conflicts: list = None, resolutions: dict = None) -
         reason="marker file",
         extra={"vars": _marker_vars(inputs)},
     ))
-    ops.append(Op(
-        kind="render_template",
-        source="templates/manuscript-claude-md.template",
-        dest="CLAUDE.md",
-        reason="per-paper CLAUDE.md",
-        extra={"vars": _claude_md_vars(inputs)},
-    ))
-    ops.append(Op(
-        kind="render_template",
-        source="templates/manuscript-memory-md.template",
-        dest="claude_memory/MEMORY.md",
-        reason="per-paper MEMORY.md",
-        extra={"vars": {}},  # template uses no substitutions
-    ))
 
-    # 4. passport.json stub
-    ops.append(Op(
-        kind="write_json",
-        dest="claude_memory/passport.json",
-        reason="cycle 0 stub",
-        extra={"content": {"sws_version": "0.1", "cycle": 0, "history": []}},
-    ))
+    # CLAUDE.md: render only on fresh init (no C4 conflict) or explicit replace.
+    if c4_resolution is None or c4_resolution == "replace":
+        ops.append(Op(
+            kind="render_template",
+            source="templates/manuscript-claude-md.template",
+            dest="CLAUDE.md",
+            reason="per-paper CLAUDE.md",
+            extra={"vars": _claude_md_vars(inputs)},
+        ))
+
+    # MEMORY.md + passport.json: render only on fresh init (no C5 conflict) or explicit replace.
+    # (Same gate for both — they live inside claude_memory/.)
+    if c5_resolution is None or c5_resolution == "replace":
+        ops.append(Op(
+            kind="render_template",
+            source="templates/manuscript-memory-md.template",
+            dest="claude_memory/MEMORY.md",
+            reason="per-paper MEMORY.md",
+            extra={"vars": {}},  # template uses no substitutions
+        ))
+
+        # 4. passport.json stub
+        ops.append(Op(
+            kind="write_json",
+            dest="claude_memory/passport.json",
+            reason="cycle 0 stub",
+            extra={"content": {"sws_version": "0.1", "cycle": 0, "history": []}},
+        ))
 
     return ops
 
