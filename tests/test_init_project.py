@@ -334,8 +334,8 @@ class TestBuildPlanResolutions(unittest.TestCase):
     def _c4(self):
         from sws_init_project import Conflict
         return Conflict(cls="C4", path="CLAUDE.md",
-                        suggested_action="[r]eplace with SWS template / [s]kip (leave file untouched)",
-                        options=["replace", "skip"])
+                        suggested_action="[r]eplace with SWS template / [a]ppend SWS-managed section / [s]kip (leave file untouched)",
+                        options=["replace", "append", "skip"])
 
     def _c5(self):
         from sws_init_project import Conflict
@@ -400,6 +400,20 @@ class TestBuildPlanResolutions(unittest.TestCase):
         write_json_dests = self._dests_of_kind(plan, "write_json")
         self.assertIn("claude_memory/MEMORY.md", render_dests)
         self.assertIn("claude_memory/passport.json", write_json_dests)
+
+    def test_C4_append_emits_append_op_and_omits_render(self):
+        plan = sws_init_project.build_plan(
+            self._base_inputs(),
+            conflicts=[self._c4()],
+            resolutions={"C4": "append"},
+        )
+        render_dests = self._dests_of_kind(plan, "render_template")
+        append_dests = self._dests_of_kind(plan, "append_sws_section")
+        self.assertNotIn("CLAUDE.md", render_dests)
+        self.assertIn("CLAUDE.md", append_dests)
+        # Marker + MEMORY/passport still emitted
+        self.assertIn(".sws-project.local.md", render_dests)
+        self.assertIn("claude_memory/MEMORY.md", render_dests)
 
     def test_C4_and_C5_both_skip_renders_only_marker(self):
         plan = sws_init_project.build_plan(

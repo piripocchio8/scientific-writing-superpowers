@@ -315,6 +315,15 @@ def build_plan(inputs: dict, conflicts: list = None, resolutions: dict = None) -
             extra={"vars": _claude_md_vars(inputs)},
         ))
 
+    # C4=append: emit append_sws_section op (no render_template for CLAUDE.md in this case).
+    if c4_resolution == "append":
+        ops.append(Op(
+            kind="append_sws_section",
+            dest="CLAUDE.md",
+            reason="smart-merge C4 (append SWS section)",
+            extra={"short_handle": inputs["short_handle"]},
+        ))
+
     # MEMORY.md + passport.json: render only on fresh init (no C5 conflict) or explicit replace.
     # (Same gate for both — they live inside claude_memory/.)
     if c5_resolution is None or c5_resolution == "replace":
@@ -335,6 +344,36 @@ def build_plan(inputs: dict, conflicts: list = None, resolutions: dict = None) -
         ))
 
     return ops
+
+
+SWS_MARKER_OPEN = "<!-- SWS-managed start: do not hand-edit between the markers below -->"
+SWS_MARKER_CLOSE = "<!-- SWS-managed end -->"
+
+
+def _build_sws_section(short_handle: str) -> str:
+    """Return the marker-delimited SWS-managed block for C4=append.
+
+    Idempotent: re-running with the same or different short_handle replaces
+    only the content between the open/close markers, leaving the user's
+    surrounding content untouched.
+    """
+    return (
+        f"{SWS_MARKER_OPEN}\n\n"
+        "## SWS-managed\n\n"
+        f"This manuscript directory is SWS-bootstrapped (`{short_handle}`). "
+        "Canonical project metadata lives in `.sws-project.local.md`; agents "
+        "reading this CLAUDE.md should look there for `article_type`, "
+        "`language`, `format`, `target_journal`/`target_call`, etc.\n\n"
+        "Where to find context:\n\n"
+        "- `.sws-project.local.md` — active SWS settings.\n"
+        "- `claude_memory/MEMORY.md` — session-state index; update as you work.\n"
+        "- `Manuscript/_journal-style/<slug>.md` — journal-specific overlay "
+        "(run `/sws:resolve-journal-style` if missing).\n"
+        "- SWS plugin canonical references: `references/folder-topology.md`, "
+        "`references/marker-schema.md`, `references/docx-style.md`, "
+        "`references/python-env.md`.\n\n"
+        f"{SWS_MARKER_CLOSE}"
+    )
 
 
 def _marker_vars(inputs: dict) -> dict:
