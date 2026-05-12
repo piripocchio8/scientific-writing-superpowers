@@ -187,8 +187,8 @@ def scan_conflicts(root) -> list[Conflict]:
         conflicts.append(Conflict(
             cls="C4",
             path="CLAUDE.md",
-            suggested_action="[r]eplace with SWS template / [s]kip (leave file untouched)",
-            options=["replace", "skip"],
+            suggested_action="[r]eplace with SWS template / [a]ppend SWS-managed section / [s]kip (leave file untouched)",
+            options=["replace", "append", "skip"],
         ))
 
     # C5: existing claude_memory/

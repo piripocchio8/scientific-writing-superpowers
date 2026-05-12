@@ -200,6 +200,12 @@ class TestScanConflicts(unittest.TestCase):
         conflicts = sws_init_project.scan_conflicts(self.root)
         self.assertIn("Manuscript/", conflicts[0].suggested_action)
 
+    def test_C4_options_include_append(self):
+        (self.root / "CLAUDE.md").write_text("# my notes")
+        conflicts = sws_init_project.scan_conflicts(self.root)
+        c4 = next(c for c in conflicts if c.cls == "C4")
+        self.assertIn("append", c4.options)
+
 
 class TestBuildPlan(unittest.TestCase):
     def _base_inputs(self, **overrides):
