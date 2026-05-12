@@ -61,9 +61,10 @@ Found `paper.docx` at root. Move to `Manuscript/paper.docx`? [Y/n/skip/manual]
 - `skip` = leave the file alone, continue init (resolution: `skip`).
 - `manual` = abort the whole init for user-handled cleanup (exit cleanly, no disk writes).
 
-For **C4 (existing CLAUDE.md)** the options are `[r]eplace / [s]kip`:
-  - `replace` = overwrite user's CLAUDE.md with the SWS per-paper template.
-  - `skip` = leave user's CLAUDE.md untouched. SWS still writes the marker (`.sws-project.local.md`) so the project is recognized; the user's existing CLAUDE.md remains the source of project context. SWS-aware sessions auto-load CLAUDE.md, so this is the safe default if the user has hand-curated notes.
+For **C4 (existing CLAUDE.md)** the options are `[r]eplace / [a]ppend / [s]kip`:
+  - `replace` = overwrite user's CLAUDE.md with the SWS per-paper template. The user's existing content is lost (no automatic backup in v0.1).
+  - `append` = preserve the user's CLAUDE.md verbatim and append a marker-delimited `## SWS-managed` section at the end (cross-refs to plugin canonical references; pointer to `.sws-project.local.md` for project metadata). Idempotent on re-run: the HTML-comment markers let SWS replace the existing section instead of duplicating it. Recommended for hand-curated CLAUDE.md files.
+  - `skip` = leave the user's CLAUDE.md entirely untouched. SWS still writes the marker (`.sws-project.local.md`); agents reading via session auto-load get the user's existing CLAUDE.md as primary context.
 
 For **C5 (existing claude_memory/)** the options are `[k]eep / [r]eplace`:
   - `keep` = leave user's claude_memory/ contents alone. SWS does NOT write MEMORY.md or passport.json. Use this if the user is migrating an existing claude_memory layout and wants to integrate manually.
@@ -71,7 +72,7 @@ For **C5 (existing claude_memory/)** the options are `[k]eep / [r]eplace`:
 
 For **C6 (existing marker)** the options are `[proceed]` / `[abort]`. On `proceed`, load the existing marker's values, present them as defaults during the arg-resolution prompts, then write a merged marker.
 
-**Note (v0.2 backlog):** Smarter merges — `[a]ppend` for C4 (preserve user CLAUDE.md and append an SWS-managed section, exploiting Claude Code's auto-loaded CLAUDE.md context for in-session merge), and `[m]ove` for C5 (rotate claude_memory/ to claude_memory/_archive/ then write fresh) — are deferred. The v0.1 binary choice ([replace] vs [skip]/[keep]) is data-loss-safe by default.
+**Note (v0.2 backlog):** Smarter merges deferred to v0.2 — `[m]ove` for C5 (rotate `claude_memory/` to `claude_memory/_archive/` then write fresh), frontmatter merge for existing YAML in user's CLAUDE.md, content-aware section placement. The v0.1 options ship the data-loss-safe defaults plus the `[a]ppend` smart-merge for the typical case (existing CLAUDE.md with hand-curated content).
 
 Build a `resolutions` dict mapping `cls` → user choice.
 
