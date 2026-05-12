@@ -482,6 +482,29 @@ def _execute_op(op, project_root, plugin_root, undo: list) -> None:
         out.write_text(json.dumps(op.extra["content"], indent=2, sort_keys=True))
         undo.append(op)
 
+    elif op.kind == "append_sws_section":
+        target = project_root / op.dest
+        if not target.exists():
+            raise FileNotFoundError(
+                f"CLAUDE.md not found at {op.dest}; C4=append requires it to exist"
+            )
+        original_content = target.read_text()
+        block = _build_sws_section(op.extra["short_handle"])
+        if SWS_MARKER_OPEN in original_content and SWS_MARKER_CLOSE in original_content:
+            # Replace existing SWS-managed section in place
+            start = original_content.index(SWS_MARKER_OPEN)
+            end = original_content.index(SWS_MARKER_CLOSE) + len(SWS_MARKER_CLOSE)
+            new_content = original_content[:start] + block + original_content[end:]
+        else:
+            # Append at end with a single blank-line separator
+            sep = "\n\n" if not original_content.endswith("\n") else (
+                "\n" if not original_content.endswith("\n\n") else ""
+            )
+            new_content = original_content + sep + block + "\n"
+        target.write_text(new_content)
+        op.extra["_original_content"] = original_content
+        undo.append(op)
+
     else:
         raise ValueError(f"unknown op kind: {op.kind}")
 
@@ -519,6 +542,12 @@ def _rollback_op(op, project_root) -> None:
         target = project_root / op.dest
         if target.exists():
             target.unlink()
+
+    elif op.kind == "append_sws_section":
+        target = project_root / op.dest
+        original = op.extra.get("_original_content")
+        if original is not None and target.exists():
+            target.write_text(original)
 
 
 def _cli_scan(args):
