@@ -30,10 +30,12 @@ After arg resolution, slugify `first_author` and compute `short_handle = <slug> 
 
 ## Step b — Preflight + detection scan
 
+All Python utilities live inside the plugin at `${CLAUDE_PLUGIN_ROOT}/scripts/`. The skill is invoked from the user's manuscript directory (the cwd), NOT from the plugin root, so every Bash call must use the `${CLAUDE_PLUGIN_ROOT}` env var for absolute paths. Relative `scripts/...` paths will fail.
+
 Before any disk work, run the env preflight:
 
 ```bash
-python3 scripts/sws_check_env.py
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_check_env.py"
 ```
 
 If exit non-zero, print the error verbatim and abort. Do not attempt to invoke any other Python utility.
@@ -41,7 +43,7 @@ If exit non-zero, print the error verbatim and abort. Do not attempt to invoke a
 Then scan the cwd for the 6 conflict classes:
 
 ```bash
-python3 scripts/sws_init_project.py scan --root .
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" scan --root .
 ```
 
 The output is a JSON array of conflicts (each with `cls`, `path`, `suggested_action`, `options`). If empty, jump straight to step d (fresh-init). Otherwise proceed to step c.
@@ -78,7 +80,7 @@ Build a `resolutions` dict mapping `cls` → user choice.
 Write the inputs and resolutions to temp JSON files and call:
 
 ```bash
-python3 scripts/sws_init_project.py plan \
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" plan \
   --inputs /tmp/sws_inputs.json \
   --conflicts /tmp/sws_conflicts.json \
   --resolutions /tmp/sws_resolutions.json
@@ -112,7 +114,7 @@ If user types `cancel`, exit cleanly with no disk writes. If `apply`, proceed to
 Save the plan JSON to a temp file and execute:
 
 ```bash
-python3 scripts/sws_init_project.py apply \
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" apply \
   --plan /tmp/sws_plan.json \
   --root . \
   --plugin-root "${CLAUDE_PLUGIN_ROOT}"
