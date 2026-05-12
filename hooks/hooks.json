@@ -1,0 +1,41 @@
+{
+  "description": "SWS marker-scoped hooks: pre-edit backup, Stop passport append, SessionStart nudge. All hooks are silent no-ops outside an SWS project (no .sws-project.local.md marker).",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PLUGIN_ROOT/scripts/sws_hook_pre_edit_backup.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PLUGIN_ROOT/scripts/sws_hook_stop_passport.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PLUGIN_ROOT/scripts/sws_hook_session_start.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
