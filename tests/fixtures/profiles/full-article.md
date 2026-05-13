@@ -18,7 +18,7 @@ cover_letter_required: true
 supplementary_allowed: true
 refs_style: numbered
 agents_active: []
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper]
+agents_inactive: []
 ---
 
 # Full-article profile (fixture)

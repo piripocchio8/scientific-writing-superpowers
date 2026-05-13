@@ -83,10 +83,12 @@ class TestAgentPrelude(unittest.TestCase):
             self.assertIn("no profile set", stderr)
 
     def test_RESOLVED_OK_0_when_agent_inactive(self):
+        # methods-writer is in communication's agents_inactive per the
+        # cycle-#7 matrix (D8 — Methods routes to flagship in short-form).
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
             make_paper_with_venv(d, COMMUNICATION_MARKER)
-            code, stdout, stderr = source_prelude(d, "proposal-budget-helper")
+            code, stdout, stderr = source_prelude(d, "methods-writer")
             env = parse_env(stdout)
             self.assertEqual(env["RESOLVED_OK"], "0")
             self.assertIn("not active", stderr)

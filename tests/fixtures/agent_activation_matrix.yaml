@@ -2,13 +2,18 @@
 # agent_activation_matrix.per_profile_inactive. One key per profile, list of
 # inactive agent ids. The 9 profile fixtures in tests/fixtures/profiles/ embed
 # this matrix into their agents_inactive frontmatter field. Tests cross-check.
+#
+# Cycle-#7 update: drafter splits into drafter-flagship + drafter-fast (D6).
+# caption-writer is INVARIANT-ACTIVE across all profiles (user instruction
+# 2026-05-13) — never appears in any per_profile_inactive list.
 roster:
   - brainstormer
   - planner
   - outline-architect
   - style-calibrator
   - literature-searcher
-  - drafter
+  - drafter-flagship
+  - drafter-fast
   - methods-writer
   - caption-writer
   - reviser
@@ -29,12 +34,12 @@ roster:
   - proposal-compliance-helper
 
 per_profile_inactive:
-  full-article: [proposal-budget-helper, proposal-compliance-helper]
-  communication: [proposal-budget-helper, proposal-compliance-helper]
+  full-article: []
+  communication: [methods-writer, drafter-fast]
   perspective: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker]
-  review-paper: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
-  mini-review: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
-  editorial: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker, caption-writer]
+  review-paper: [proposal-budget-helper, proposal-compliance-helper, methods-writer]
+  mini-review: [proposal-budget-helper, proposal-compliance-helper, methods-writer]
+  editorial: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast]
   methodological-paper: [proposal-budget-helper, proposal-compliance-helper]
-  commentary-reply: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
-  funding-proposal: [response-to-reviewers]
+  commentary-reply: [proposal-budget-helper, proposal-compliance-helper, methods-writer]
+  funding-proposal: [response-to-reviewers, methods-writer, drafter-fast]
