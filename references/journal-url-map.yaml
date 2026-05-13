@@ -1,0 +1,10 @@
+# SWS v0.1 journal slug -> guide-for-authors URL map.
+# Used by /sws:resolve-journal-style. Unknown slugs prompt the user for a URL.
+chembiochem: https://chemistry-europe.onlinelibrary.wiley.com/journal/14397633/homepage/2243_authorguidelines.html
+jacs: https://pubs.acs.org/page/jacsat/submission/authors.html
+chem-sci: https://www.rsc.org/journals-books-databases/author-and-reviewer-hub/authors-information/prepare-and-format/?journalName=Chemical%20Science
+ang-chem: https://onlinelibrary.wiley.com/page/journal/15213773/homepage/2002_authorguidelines.html
+nat-comm: https://www.nature.com/ncomms/submission-guidelines
+j-chem-inf-mod: https://pubs.acs.org/page/jcisd8/submission/authors.html
+biochem-and-biophys-acta: https://www.elsevier.com/journals/biochimica-et-biophysica-acta-general-subjects/0304-4165/guide-for-authors
+chemistry-european: https://chemistry-europe.onlinelibrary.wiley.com/journal/15213765/homepage/2111_authorguidelines.html
