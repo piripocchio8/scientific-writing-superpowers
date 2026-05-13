@@ -50,7 +50,15 @@ Do NOT invoke when:
    "$PAPER_ROOT/.venv/bin/pip" install "pylatexenc>=2.10"
    ```
 
-8. **Print confirmation:** one line with paper root, venv path, and the count of installed packages.
+8. **Print confirmation:** report paper root, venv path, count of installed packages, and the SWS I/O wrapper inventory:
+
+   ```
+   sws: venv at $PAPER_ROOT/.venv with N packages installed.
+   sws: I/O wrappers available via scripts/sws_python.sh:
+        scripts/sws_read_docx.py    — read .docx (text, sections, ranges)
+        scripts/sws_read_xlsx.py    — read .xlsx (sheets, ranges, formulas)
+        (for PDF and images: use the native Read tool)
+   ```
 
 ## Notes
 
