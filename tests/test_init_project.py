@@ -659,5 +659,174 @@ class TestDefaultResolutions(unittest.TestCase):
         self.assertEqual(d, {})
 
 
+class TestC7ProfileNLParser(unittest.TestCase):
+    """Cycle #6 — natural-language → profile id mapping."""
+
+    def test_nl_parse_communication(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("for a Communication paper"),
+            "communication",
+        )
+
+    def test_nl_parse_short_letter(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("Letter to ACS"),
+            "communication",
+        )
+
+    def test_nl_parse_funding_proposal(self):
+        for text in (
+            "this is a funding proposal",
+            "PRIN 2024 proposal draft",
+            "Horizon Europe grant submission",
+            "MUR call response",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(
+                    sws_init_project.parse_natural_language_profile(text),
+                    "funding-proposal",
+                )
+
+    def test_nl_parse_mini_review(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("writing a mini-review on hDF"),
+            "mini-review",
+        )
+
+    def test_nl_parse_review_paper(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("a literature review on cofactors"),
+            "review-paper",
+        )
+
+    def test_nl_parse_methodological(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("methodological paper on Xtal pipeline"),
+            "methodological-paper",
+        )
+
+    def test_nl_parse_perspective(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("a perspective piece"),
+            "perspective",
+        )
+
+    def test_nl_parse_commentary_reply(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("a reply to Smith 2025"),
+            "commentary-reply",
+        )
+
+    def test_nl_parse_full_article(self):
+        self.assertEqual(
+            sws_init_project.parse_natural_language_profile("standard full article"),
+            "full-article",
+        )
+
+    def test_nl_parse_no_match_returns_none(self):
+        self.assertIsNone(
+            sws_init_project.parse_natural_language_profile("a manuscript about kinetics")
+        )
+
+    def test_nl_parse_empty_returns_none(self):
+        self.assertIsNone(sws_init_project.parse_natural_language_profile(""))
+        self.assertIsNone(sws_init_project.parse_natural_language_profile(None))
+
+
+class TestC7MarkerWrite(unittest.TestCase):
+    """The marker template now includes a profile field; build_plan threads it."""
+
+    def _inputs(self, **overrides):
+        d = {
+            "article_type": "communication",
+            "language": "en",
+            "format": "docx",
+            "target_journal": "chembiochem",
+            "target_call": None,
+            "first_author": "smith",
+            "year": 2026,
+            "co_authors_present": True,
+            "notebooklm_enabled": False,
+            "short_handle": "smith_et_al_2026",
+            "created_iso": "2026-05-13T00:00:00Z",
+        }
+        d.update(overrides)
+        return d
+
+    def test_marker_vars_emits_profile_set(self):
+        vars_ = sws_init_project._marker_vars(self._inputs(profile="communication"))
+        self.assertEqual(vars_["profile"], "communication")
+
+    def test_marker_vars_emits_null_when_profile_absent(self):
+        vars_ = sws_init_project._marker_vars(self._inputs())
+        self.assertEqual(vars_["profile"], "null")
+
+    def test_marker_vars_emits_null_when_profile_explicit_none(self):
+        vars_ = sws_init_project._marker_vars(self._inputs(profile=None))
+        self.assertEqual(vars_["profile"], "null")
+
+
+class TestVenvBootstrap(unittest.TestCase):
+    """The bootstrap_venv op runs after init-project base setup."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        # SWS_TEST_SKIP_PIP=1 prevents the slow network install
+        # while still exercising the venv-creation code path.
+        import os
+        os.environ["SWS_TEST_SKIP_PIP"] = "1"
+
+    def tearDown(self):
+        import os
+        os.environ.pop("SWS_TEST_SKIP_PIP", None)
+        self.tmp.cleanup()
+
+    def _inputs(self, **overrides):
+        d = {
+            "article_type": "communication",
+            "language": "en",
+            "format": "docx",
+            "target_journal": "chembiochem",
+            "target_call": None,
+            "first_author": "smith",
+            "year": 2026,
+            "co_authors_present": True,
+            "notebooklm_enabled": False,
+            "short_handle": "smith_et_al_2026",
+            "created_iso": "2026-05-13T00:00:00Z",
+            "profile": "communication",
+        }
+        d.update(overrides)
+        return d
+
+    def test_plan_includes_bootstrap_venv_op(self):
+        plan = sws_init_project.build_plan(self._inputs())
+        kinds = [op.kind for op in plan]
+        self.assertIn("bootstrap_venv", kinds)
+
+    def test_creates_paper_venv_on_apply(self):
+        plan = sws_init_project.build_plan(self._inputs())
+        plugin_root = Path(__file__).resolve().parent.parent
+        ok, _ = sws_init_project.apply_plan(plan, self.root, plugin_root)
+        self.assertTrue(ok)
+        self.assertTrue((self.root / ".venv" / "bin" / "python").exists())
+
+    def test_skips_venv_if_already_exists(self):
+        existing = self.root / ".venv" / "bin"
+        existing.mkdir(parents=True)
+        py = existing / "python"
+        py.write_text("#!/bin/sh\necho noop\n")
+        py.chmod(0o755)
+        plan = [
+            sws_init_project.Op(kind="bootstrap_venv", dest=".venv", reason="test"),
+        ]
+        plugin_root = Path(__file__).resolve().parent.parent
+        ok, _ = sws_init_project.apply_plan(plan, self.root, plugin_root)
+        self.assertTrue(ok)
+        # File still our stub, not python interpreter — confirms idempotent skip.
+        self.assertIn("noop", py.read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

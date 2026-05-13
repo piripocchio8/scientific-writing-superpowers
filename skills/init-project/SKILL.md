@@ -22,9 +22,12 @@ Do NOT invoke when:
 ## Step a — Argument resolution (3-tier waterfall)
 
 1. **Named args:** parse the slash-command invocation for any of:
-   `--article-type, --language, --format, --target-journal, --target-call, --first-author, --year, --co-authors, --notebooklm, --c1, --c2, --c3, --c4, --c5, --c6`
+   `--article-type, --language, --format, --target-journal, --target-call, --first-author, --year, --co-authors, --notebooklm, --c1, --c2, --c3, --c4, --c5, --c6, --c7`
+   `--c7=<profile-name>` sets the writing-profile field in the marker (cycle #6, D12). Valid profile names are the 9 v0.1 ids (see `${CLAUDE_PLUGIN_ROOT}/profiles/`). If a name outside this set is passed, abort with the same kind of validation error used for `--article-type`.
 2. **Natural-language `$ARGUMENTS`:** if free text accompanies the slash command (e.g., `/sws:init-project Communication for ChemBioChem on hDF kinetics, first author Smith with co-authors`), parse it for any unset fields. Use the model's natural-language understanding; do not require structured syntax.
+   Profile-NL parsing: call `parse_natural_language_profile()` in `scripts/sws_init_project.py` for phrases like "for a Communication paper", "this is a funding proposal", "writing a mini-review on …", "perspective piece", etc. An explicit `--c7` flag always wins over NL parse (D12).
 3. **Interactive prompts:** for any required field still missing, prompt one at a time. Defaults come from `references/marker-schema.md` (`language: en`, `format: docx`, `notebooklm.enabled: false`). For `year`, default to the current system year.
+   **Profile is not interactive:** if neither `--c7` nor an NL phrase resolved a profile, the marker is written with `profile: null` and the cycle-#6 SessionStart nudge fires on first session (D12 — no destructive defaulting).
 
 **Conflict override flags:** `--c1`..`--c6` each take a string value matching that conflict class's `options` list (e.g., `--c4=replace`, `--c4=append`, `--c4=skip`). These override the safe-default resolution computed in Step c. NL-parse counterparts:
 - "overwrite my CLAUDE.md" / "replace existing CLAUDE.md" → c4=replace
@@ -166,6 +169,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sws_init_project.py" apply \
 
 The utility executes ops in order with an in-memory undo log; on failure or `ctrl-C` it reverses the log. User-pre-existing files are touched only via ops the user explicitly approved at step c.
 
+The plan now also includes a `bootstrap_venv` op (cycle #6, D19/D20) which creates `<paper>/.venv/` from the system `python3 -m venv` and runs `pip install -r ${CLAUDE_PLUGIN_ROOT}/requirements/sws-deps.txt`. The op is idempotent (skips if `.venv/bin/python` already exists). Per-paper venv discipline keeps the plugin portable — no developer-machine interpreters are named in plugin code.
+
 If exit non-zero, print the rollback log and stop. If exit zero, proceed to step g.
 
 ## Step g — Post-apply
@@ -199,7 +204,9 @@ Configuration: article_type=<...>, language=<...>, format=<...>
 Target: target_journal=<...> | target_call=<...>
 
 Next steps (suggested):
-  - Run /sws:resolve-journal-style <slug> to cache the venue style overlay (in a later cycle).
+  - If profile was not set at init time, run /sws:set-profile <name> (cycle #6).
+  - Run /sws:resolve-journal-style <slug> to cache the venue style overlay.
+  - For funding proposals, run /sws:resolve-call-rules to parse the call.
   - Drop your manuscript at Manuscript/<short_handle>.docx (or .tex).
   - Start drafting (ships in a later cycle).
 ```

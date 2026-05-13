@@ -19,6 +19,19 @@ def main() -> int:
     if marker is None:
         return 0
 
+    # Missing-profile nudge takes priority (cycle #6, D7).
+    # When the marker's profile field is null or absent, surface only the
+    # one-line nudge and skip the passport summary and journal-style hint —
+    # agents are paused until the user sets a profile.
+    profile = marker.get("profile")
+    if profile in (None, "", "null"):
+        print(
+            "No profile set — run /sws:set-profile <name> "
+            "(e.g. communication, full-article, funding-proposal). "
+            "Agents are paused until set."
+        )
+        return 0
+
     lines = []
 
     passport_path = cwd / "claude_memory" / "passport.json"

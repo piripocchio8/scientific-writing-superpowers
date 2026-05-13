@@ -19,10 +19,18 @@ SWS-bootstrapped manuscript project.
 
 ## Where to find context
 
-- `.sws-project.local.md` — active SWS settings (article_type, language, format, target journal/call, NLM opt-in).
+- `.sws-project.local.md` — active SWS settings (article_type, profile, language, format, target journal/call, NLM opt-in).
 - `claude_memory/MEMORY.md` — session-state index; update as you work.
 - `Manuscript/_journal-style/<slug>.md` — journal-specific overlay (run `/sws:resolve-journal-style` if missing).
+- `Manuscript/_call/<slug>.md` — funding-call overlay (run `/sws:resolve-call-rules` if missing).
 - SWS plugin canonical references: `references/folder-topology.md`, `references/marker-schema.md`, `references/docx-style.md`, `references/python-env.md`.
+
+## Cycle-#6 slash commands
+
+- `/sws:set-profile <name>` — set or change the writing profile (one of 9 ids). Required before agents will run.
+- `/sws:resolve-journal-style <slug>` — synthesize the per-journal frontmatter overlay (slug is one of `chembiochem, jacs, chem-sci, ang-chem, nat-comm, j-chem-inf-mod, biochem-and-biophys-acta, chemistry-european`, or a custom slug with `--url`).
+- `/sws:resolve-call-rules` — synthesize the per-call frontmatter overlay (requires `profile: funding-proposal`).
+- `/sws:install-deps` — bootstrap or refresh the per-paper `.venv/` from `requirements/sws-deps.txt`.
 
 ## Per-paper notes
 

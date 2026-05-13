@@ -1,4 +1,5 @@
 """Tests for sws_hook_utils.py — pure stdlib + unittest."""
+import os
 import sys
 import tempfile
 import unittest
@@ -76,6 +77,65 @@ class TestParseMarker(unittest.TestCase):
             path = f.name
         result = sws_hook_utils.parse_marker(path)
         self.assertEqual(result, {})
+
+
+class TestWriteMarkerField(unittest.TestCase):
+    def _make_marker(self, content: str) -> Path:
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False)
+        tmp.write(content)
+        tmp.close()
+        path = Path(tmp.name)
+        self.addCleanup(lambda: path.unlink() if path.exists() else None)
+        return path
+
+    def test_writes_new_field_to_frontmatter(self):
+        marker = self._make_marker(SAMPLE_MARKER)
+        sws_hook_utils.write_marker_field(marker, "profile", "communication")
+        parsed = sws_hook_utils.parse_marker(marker)
+        self.assertEqual(parsed["profile"], "communication")
+
+    def test_overwrites_existing_field(self):
+        marker = self._make_marker(SAMPLE_MARKER)
+        sws_hook_utils.write_marker_field(marker, "language", "it")
+        parsed = sws_hook_utils.parse_marker(marker)
+        self.assertEqual(parsed["language"], "it")
+
+    def test_preserves_other_fields_and_body(self):
+        marker = self._make_marker(SAMPLE_MARKER)
+        sws_hook_utils.write_marker_field(marker, "profile", "full-article")
+        text = marker.read_text()
+        # Body preserved
+        self.assertIn("# smith_et_al_2026 — SWS marker", text)
+        # Other fields preserved
+        parsed = sws_hook_utils.parse_marker(marker)
+        self.assertEqual(parsed["article_type"], "communication")
+        self.assertEqual(parsed["format"], "docx")
+        self.assertEqual(parsed["target_journal"], "chembiochem")
+
+    def test_creates_frontmatter_block_if_absent(self):
+        marker = self._make_marker("# No frontmatter here\nJust body.\n")
+        sws_hook_utils.write_marker_field(marker, "profile", "communication")
+        parsed = sws_hook_utils.parse_marker(marker)
+        self.assertEqual(parsed["profile"], "communication")
+        text = marker.read_text()
+        self.assertTrue(text.startswith("---\n"))
+        self.assertIn("# No frontmatter here", text)
+
+    def test_serializes_null_for_None(self):
+        marker = self._make_marker(SAMPLE_MARKER)
+        sws_hook_utils.write_marker_field(marker, "profile", None)
+        text = marker.read_text()
+        self.assertIn("profile: null", text)
+        parsed = sws_hook_utils.parse_marker(marker)
+        self.assertIsNone(parsed.get("profile"))
+
+    def test_serializes_bool(self):
+        marker = self._make_marker(SAMPLE_MARKER)
+        sws_hook_utils.write_marker_field(marker, "ready", True)
+        text = marker.read_text()
+        self.assertIn("ready: true", text)
+        parsed = sws_hook_utils.parse_marker(marker)
+        self.assertIs(parsed["ready"], True)
 
 
 if __name__ == "__main__":
