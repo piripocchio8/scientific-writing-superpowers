@@ -149,17 +149,18 @@ def main(argv=None) -> int:
     else:
         if args.noninteractive:
             print(
-                "error: no synthesizer fixture set in noninteractive mode "
-                "(SWS_TEST_FIXTURE_SYNTH_OUTPUT). The SKILL.md prose handles "
-                "the LLM extraction in production.",
+                "error: this helper requires synthesized frontmatter input.\n"
+                "End-users should run /sws:resolve-call-rules (the slash command),\n"
+                "which dispatches the LLM extractor + Q&A wizard through SKILL.md.\n"
+                "For tests: set SWS_TEST_FIXTURE_SYNTH_OUTPUT=<path-to-yaml-file>.",
                 file=sys.stderr,
             )
             return 3
         # The SKILL.md prose handles the interactive LLM + Q&A wizard in prod.
         print(
-            "info: this helper expects the SKILL.md prose layer to dispatch the "
-            "LLM extractor + Q&A wizard and pass the result via "
-            "SWS_TEST_FIXTURE_SYNTH_OUTPUT.",
+            "info: this helper expects the SKILL.md prose layer (invoked by\n"
+            "/sws:resolve-call-rules) to dispatch the LLM extractor + Q&A wizard\n"
+            "and pass the result via SWS_TEST_FIXTURE_SYNTH_OUTPUT.",
             file=sys.stderr,
         )
         return 3

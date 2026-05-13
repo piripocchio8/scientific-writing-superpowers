@@ -85,14 +85,21 @@ FORMATS = ("docx", "latex")
 
 # Natural-language phrase -> profile id, in priority order.
 # Longer / more-specific phrases listed first so they win the regex race.
+# commentary-reply is checked BEFORE communication so that "letter to the editor"
+# (and related correspondence phrases) routes to commentary-reply rather than
+# being captured by the bare \bletter\b alternative in the communication pattern.
 _PROFILE_NL_PATTERNS = (
     (r"\bmini[\s\-]?review\b", "mini-review"),
+    (
+        r"\bletter\s+to\s+(?:the\s+)?editor\b|\bcorrespondence\b"
+        r"|\bresponse\s+to\b|\breply\b|\bcomment\s+on\b|\brebuttal\b",
+        "commentary-reply",
+    ),
     (r"\b(?:short[\s\-]?)?communication\b|\bcomm\b|\bletter\b", "communication"),
     (r"\bperspective\b|\bviewpoint\b", "perspective"),
     (r"\b(?:literature\s+)?review\b", "review-paper"),
     (r"\beditorial\b", "editorial"),
     (r"\bmethod(?:ological|s)\s+(?:paper|article)\b", "methodological-paper"),
-    (r"\breply\b|\bcomment\s+on\b|\brebuttal\b", "commentary-reply"),
     (
         r"\bfunding\s+proposal\b|\bgrant\s+proposal\b|\bprin\b|\bmur\b|\berc\b"
         r"|\bhorizon\s+europe\b|\bcall\s+(?:for|of)\b",

@@ -1,4 +1,4 @@
-"""Tests for sws_fs_index.py — pure stdlib + unittest, runs under pymol25."""
+"""Tests for sws_fs_index.py — pure stdlib + unittest, Python 3.9+."""
 import json
 import sys
 import tempfile

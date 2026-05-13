@@ -3,7 +3,7 @@
 
 Walk a project directory, write a JSON manifest of file metadata so later
 tool calls read the manifest instead of repeatedly running ls/find.
-Designed for the pymol25 mamba env (Python 3.9+, stdlib only).
+Designed for Python 3.9+, stdlib only.
 
 Usage:
     python sws_fs_index.py [--root <dir>] [--out <path>]

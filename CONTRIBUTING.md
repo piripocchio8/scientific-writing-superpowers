@@ -34,7 +34,7 @@ cd scientific-writing-superpowers
 python -m unittest tests.test_fs_index -v
 ```
 
-The reference Python env is `pymol25` (mamba). Any Python ≥ 3.9 with stdlib only is fine — the utility takes no external dependencies.
+Use any Python ≥ 3.9. Hooks and the filesystem-index utility are stdlib-only. The resolver unit tests (`tests/test_resolve_overlay.py`, `tests/test_profiles.py`) require `PyYAML`. Plugin scripts at runtime resolve to a per-paper `.venv/` via `scripts/sws_python.sh`; you don't need that venv to run the dev test suite locally.
 
 For agent or skill changes, install the plugin and exercise the affected component in a synthetic SWS project.
 

@@ -717,6 +717,20 @@ class TestC7ProfileNLParser(unittest.TestCase):
             "commentary-reply",
         )
 
+    def test_nl_parse_letter_to_the_editor_is_commentary(self):
+        for text in (
+            "writing a letter to the editor of JACS",
+            "Letter to the Editor responding to Doe 2024",
+            "Letter to Editor",
+            "this is a correspondence on the Smith paper",
+            "response to Jones et al. 2023",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(
+                    sws_init_project.parse_natural_language_profile(text),
+                    "commentary-reply",
+                )
+
     def test_nl_parse_full_article(self):
         self.assertEqual(
             sws_init_project.parse_natural_language_profile("standard full article"),
