@@ -107,9 +107,10 @@ def main(argv=None) -> int:
         # mode we abort cleanly.
         if args.noninteractive:
             print(
-                "error: no synthesizer fixture set in noninteractive mode "
-                "(SWS_TEST_FIXTURE_SYNTH_OUTPUT). The SKILL.md layer handles "
-                "the WebFetch + subagent dispatch in production.",
+                "error: this helper requires synthesized frontmatter input.\n"
+                "End-users should run /sws:resolve-journal-style (the slash command),\n"
+                "which dispatches the synthesizer subagent through SKILL.md.\n"
+                "For tests: set SWS_TEST_FIXTURE_SYNTH_OUTPUT=<path-to-yaml-file>.",
                 file=sys.stderr,
             )
             return 3
@@ -117,9 +118,10 @@ def main(argv=None) -> int:
         # to have populated SWS_TEST_FIXTURE_SYNTH_OUTPUT before invoking this
         # script. We surface an instruction rather than guessing.
         print(
-            "info: this helper expects the SKILL.md prose layer to dispatch the "
-            "synthesizer subagent and pass the result via SWS_TEST_FIXTURE_SYNTH_OUTPUT. "
-            "URL: " + url,
+            "info: this helper expects the SKILL.md prose layer (invoked by\n"
+            "/sws:resolve-journal-style) to dispatch the synthesizer subagent and\n"
+            "pass the result via SWS_TEST_FIXTURE_SYNTH_OUTPUT. URL for synthesis: "
+            + url,
             file=sys.stderr,
         )
         return 3
