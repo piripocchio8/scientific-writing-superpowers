@@ -14,7 +14,7 @@ cover_letter_required: false
 supplementary_allowed: false
 refs_style: numbered
 agents_active: []
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker, caption-writer]
+agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast]
 ---
 
 # Editorial profile
@@ -26,4 +26,4 @@ agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-wr
 
 ## Drafter notes
 
-No abstract. Most non-prose agents (methods-writer, data-curator, plot-maker, caption-writer) are inactive — an editorial is prose end-to-end. Reviser, humanizer, style-enforcer all stay active because tone calibration matters more here than anywhere.
+No abstract. Most non-prose agents (methods-writer, drafter-fast) are inactive — an editorial is prose end-to-end. caption-writer stays active because the optional figure still needs a caption (invariant per user instruction 2026-05-13). Reviser, humanizer, style-enforcer all stay active because tone calibration matters more here than anywhere.
