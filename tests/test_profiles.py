@@ -9,10 +9,15 @@ import yaml
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PROFILES = ROOT / "profiles"
 
-# Roster from claude_memory/project_roster_v0.1.md (24 agents).
+# Roster from claude_memory/project_roster_v0.1.md, with the cycle-#7
+# drafter split (D6): the original `drafter` agent splits into
+# `drafter-flagship` (Opus 4.7) and `drafter-fast` (Sonnet 4.6). Roster
+# count stays effectively 24 (D6 explicitly notes the split is internal
+# to the drafter slot).
 ROSTER = {
     "brainstormer", "planner", "outline-architect", "style-calibrator",
-    "literature-searcher", "drafter", "methods-writer", "caption-writer",
+    "literature-searcher", "drafter-flagship", "drafter-fast",
+    "methods-writer", "caption-writer",
     "reviser", "humanizer", "style-enforcer", "consistency-checker",
     "peer-reviewer", "code-reviewer", "claim-verifier", "plagiarism-screener",
     "plot-maker", "data-curator", "bibliography-curator", "cover-letter-writer",

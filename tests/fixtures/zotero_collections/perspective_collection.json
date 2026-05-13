@@ -1,0 +1,29 @@
+{
+  "collection": "perspective_peptide_therapeutics",
+  "exported_at": "2026-05-13T10:00:00Z",
+  "items": [
+    {
+      "key": "ABCDEFGH",
+      "creators": [{"firstName": "John", "lastName": "Smith", "creatorType": "author"}],
+      "date": "2023",
+      "title": "Semaglutide and the resurgence of peptide therapeutics",
+      "DOI": "10.1021/jacs.3c00001",
+      "abstractNote": "Showed that GLP-1 agonists rekindled clinical interest in peptide-based drugs."
+    },
+    {
+      "key": "IJKLMNOP",
+      "creators": [{"firstName": "Maria", "lastName": "Garcia", "creatorType": "author"}],
+      "date": "2024-03",
+      "title": "Cyclic peptide stability in serum",
+      "DOI": "10.1039/d3sc00001a",
+      "abstractNote": "Demonstrated 8-fold improved serum half-life via head-to-tail cyclization."
+    },
+    {
+      "key": "QRSTUVWX",
+      "creators": [{"firstName": "L.", "lastName": "vanderHeijden", "creatorType": "author"}],
+      "date": "2022",
+      "title": "Peptide cyclization strategies — a survey",
+      "abstractNote": "Catalogues 14 cyclization chemistries with structure-activity tradeoffs."
+    }
+  ]
+}

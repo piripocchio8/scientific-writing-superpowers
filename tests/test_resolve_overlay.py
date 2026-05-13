@@ -244,8 +244,21 @@ class TestShouldRunMatrix(unittest.TestCase):
                 self.assertTrue(payload["should_run"])
 
     def test_proposal_helpers_inactive_outside_funding(self):
+        # Cycle-#7 (D9 + caption-writer invariant): proposal-budget-helper
+        # and proposal-compliance-helper are listed in agents_inactive for
+        # every PUBLICATION profile that explicitly opts them out
+        # (perspective, review-paper, mini-review, editorial,
+        # methodological-paper, commentary-reply). full-article and
+        # communication leave them out of the inactive list — the
+        # /sws:proposal-* skills themselves gate on profile=funding-proposal,
+        # so the agents-level resolver returns should_run=True there without
+        # harm.
+        OPT_OUT = {
+            "perspective", "review-paper", "mini-review",
+            "editorial", "methodological-paper", "commentary-reply",
+        }
         for profile in PROFILES:
-            if profile == "funding-proposal":
+            if profile not in OPT_OUT:
                 continue
             for agent in ("proposal-budget-helper", "proposal-compliance-helper"):
                 with self.subTest(profile=profile, agent=agent):
@@ -269,14 +282,18 @@ class TestShouldRunMatrix(unittest.TestCase):
                 payload = run_for_agent(profile, "methods-writer")
                 self.assertFalse(payload["should_run"])
 
-    def test_caption_writer_inactive_only_in_editorial(self):
+    def test_caption_writer_active_in_every_profile(self):
+        # Cycle-#7 invariant (user instruction 2026-05-13): caption-writer
+        # must NOT appear in any per_profile_inactive list. Editorial — which
+        # used to opt out — now keeps it active because its single optional
+        # figure still needs a caption.
         for profile in PROFILES:
             with self.subTest(profile=profile):
                 payload = run_for_agent(profile, "caption-writer")
-                if profile == "editorial":
-                    self.assertFalse(payload["should_run"])
-                else:
-                    self.assertTrue(payload["should_run"])
+                self.assertTrue(
+                    payload["should_run"],
+                    f"caption-writer must be active in {profile} (cycle-#7 invariant)",
+                )
 
     def test_methods_writer_active_in_methodological_paper(self):
         payload = run_for_agent("methodological-paper", "methods-writer")
@@ -319,12 +336,17 @@ class TestEdgeCases(unittest.TestCase):
             self.assertEqual(payload["resolved_frontmatter"]["ref_cap"], 50)
 
     def test_E10_overlay_omits_activation_lists_inherits_profile(self):
+        # Cycle-#7 update: communication's agents_inactive is
+        # [methods-writer, drafter-fast]; methods-writer is the agent
+        # blocked by the profile, not proposal-budget-helper. Verify the
+        # overlay (which omits activation lists) inherits that profile-level
+        # block.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
             make_paper(d, ["profile: communication", "target_journal: chembiochem"])
             write_journal_overlay(d, "chembiochem", "---\nref_cap: 50\n---\n")
             code, payload, _ = run_resolver(
-                d, agent="proposal-budget-helper", profiles_dir=PROFILES_FIXTURE,
+                d, agent="methods-writer", profiles_dir=PROFILES_FIXTURE,
             )
             self.assertEqual(code, 0)
             self.assertFalse(payload["should_run"])

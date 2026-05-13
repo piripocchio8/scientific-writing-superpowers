@@ -6,6 +6,9 @@ project_*.md
 scratch/
 tmp/
 
+# Cycle #7 beta-test sandbox (real-manuscript snapshots — never push)
+_perspective_beta/
+
 # Claude Code per-machine local settings
 .claude/settings.local.json
 

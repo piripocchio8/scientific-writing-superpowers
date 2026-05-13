@@ -89,9 +89,11 @@ else
 fi
 
 # Step 5: agent gated by matrix
-# proposal-budget-helper is inactive in communication profile → RESOLVED_OK should be 0.
-if bash -c "source '$PLUGIN_ROOT/scripts/agent_prelude.sh' proposal-budget-helper; [[ \"\$RESOLVED_OK\" == \"0\" ]]" 2>/dev/null; then
-    say_pass "step 5 (proposal-budget-helper gated off in communication)"
+# methods-writer is inactive in communication profile (cycle-#7 D8 matrix
+# update — the short-form Communication profile drops methods-writer along
+# with drafter-fast). RESOLVED_OK should be 0.
+if bash -c "source '$PLUGIN_ROOT/scripts/agent_prelude.sh' methods-writer; [[ \"\$RESOLVED_OK\" == \"0\" ]]" 2>/dev/null; then
+    say_pass "step 5 (methods-writer gated off in communication)"
 else
     say_fail "step 5 (matrix gating broken)"
     exit 1
