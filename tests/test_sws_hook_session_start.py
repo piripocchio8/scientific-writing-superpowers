@@ -13,6 +13,7 @@ MARKER_CONTENT = """\
 ---
 sws_version: 0.1
 article_type: communication
+profile: communication
 language: en
 format: docx
 target_journal: chembiochem
@@ -26,6 +27,7 @@ FUNDING_MARKER_CONTENT = """\
 ---
 sws_version: 0.1
 article_type: funding-proposal
+profile: funding-proposal
 language: it
 format: docx
 target_journal: null
@@ -123,6 +125,80 @@ class TestSessionStart(unittest.TestCase):
             result = _run_hook(tmp)
             self.assertEqual(result.returncode, 0)
             self.assertNotIn("resolve-journal-style", result.stdout)
+
+
+PROFILE_NULL_MARKER = """\
+---
+sws_version: 0.1
+article_type: communication
+profile: null
+language: en
+format: docx
+target_journal: chembiochem
+target_call: null
+---
+
+# profile null
+"""
+
+PROFILE_SET_MARKER = """\
+---
+sws_version: 0.1
+article_type: communication
+profile: communication
+language: en
+format: docx
+target_journal: chembiochem
+target_call: null
+---
+
+# profile set
+"""
+
+
+class TestSessionStartProfileNudge(unittest.TestCase):
+    def test_prints_nudge_when_profile_null(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _write_marker(tmp, PROFILE_NULL_MARKER)
+            result = _run_hook(tmp)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("No profile set", result.stdout)
+            self.assertIn("/sws:set-profile", result.stdout)
+
+    def test_no_nudge_when_profile_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _write_marker(tmp, PROFILE_SET_MARKER)
+            result = _run_hook(tmp)
+            self.assertEqual(result.returncode, 0)
+            self.assertNotIn("No profile set", result.stdout)
+
+    def test_nudge_lists_profile_options(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _write_marker(tmp, PROFILE_NULL_MARKER)
+            result = _run_hook(tmp)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("communication", result.stdout)
+            self.assertIn("funding-proposal", result.stdout)
+
+    def test_profile_null_suppresses_existing_passport_and_overlay_nudges(self):
+        """When profile is null we surface only the profile nudge — no clutter."""
+        with tempfile.TemporaryDirectory() as tmp:
+            _write_marker(tmp, PROFILE_NULL_MARKER)
+            _write_passport(tmp, [
+                {
+                    "cycle": 1,
+                    "timestamp": "2026-05-12T10:00:00Z",
+                    "agent": None,
+                    "file": ["Manuscript/paper.docx"],
+                    "change_summary": None,
+                    "next_step": None,
+                }
+            ])
+            result = _run_hook(tmp)
+            self.assertEqual(result.returncode, 0)
+            self.assertNotIn("last cycle", result.stdout)
+            self.assertNotIn("resolve-journal-style", result.stdout)
+            self.assertIn("No profile set", result.stdout)
 
 
 if __name__ == "__main__":
