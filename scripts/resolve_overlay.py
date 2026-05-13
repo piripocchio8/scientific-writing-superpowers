@@ -235,7 +235,10 @@ def main(argv=None) -> int:
                     help="Override profile directory (test use only)")
     args = ap.parse_args(argv)
 
-    plugin_root = Path(__file__).resolve().parent.parent
+    # Resolve plugin root from __file__ without following the symlink — when
+    # tests stage a fake plugin directory, the scripts are symlinked into it
+    # and we need profiles/ to come from the staged dir, not the real repo.
+    plugin_root = Path(__file__).absolute().parent.parent
     profiles_dir = args.profiles_dir or (plugin_root / "profiles")
 
     code, payload = resolve(args.paper, args.agent, profiles_dir)
