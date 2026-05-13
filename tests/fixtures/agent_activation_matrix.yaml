@@ -1,0 +1,40 @@
+# Agent activation matrix per spec frontmatter
+# agent_activation_matrix.per_profile_inactive. One key per profile, list of
+# inactive agent ids. The 9 profile fixtures in tests/fixtures/profiles/ embed
+# this matrix into their agents_inactive frontmatter field. Tests cross-check.
+roster:
+  - brainstormer
+  - planner
+  - outline-architect
+  - style-calibrator
+  - literature-searcher
+  - drafter
+  - methods-writer
+  - caption-writer
+  - reviser
+  - humanizer
+  - style-enforcer
+  - consistency-checker
+  - peer-reviewer
+  - code-reviewer
+  - claim-verifier
+  - plagiarism-screener
+  - plot-maker
+  - data-curator
+  - bibliography-curator
+  - cover-letter-writer
+  - response-to-reviewers
+  - nlm-librarian
+  - proposal-budget-helper
+  - proposal-compliance-helper
+
+per_profile_inactive:
+  full-article: [proposal-budget-helper, proposal-compliance-helper]
+  communication: [proposal-budget-helper, proposal-compliance-helper]
+  perspective: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker]
+  review-paper: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
+  mini-review: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
+  editorial: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker, caption-writer]
+  methodological-paper: [proposal-budget-helper, proposal-compliance-helper]
+  commentary-reply: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
+  funding-proposal: [response-to-reviewers]
