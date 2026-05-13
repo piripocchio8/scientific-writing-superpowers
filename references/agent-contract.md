@@ -25,9 +25,13 @@ Reuse `<paper>/.venv/`. Do NOT install new pip packages unless the task genuinel
 
 Prefer `scripts/sws_fs_index.py` (the project manifest) and the `Explore` tool over `Bash`/`ls`/`find`. Reach for shell only when no alternative exists. Long sessions burn tokens on repeated directory walks; the fs-index utility (cycle #1) was built specifically to avoid that. When you need a single file path you already know, use `Read` directly — do not list its parent first.
 
-### R3 — Built-in skill preference
+### R3 — Format-aware reading
 
-Use Claude's native PDF reading, DOCX reading, and image viewing for: paper figures, manuscript PNG/TIF/JPEG/SVG files, PDF figures, and full PDF/DOCX documents. Do NOT spawn external Python parsers (python-docx, pdfplumber, PIL) when a built-in skill suffices. The built-ins are token-efficient and require no per-paper dependency installation. R1 reinforces this — fewer parsers = fewer pip installs.
+Native `Read` tool works for: PDF (text + low-resolution rendering, ≤10 pages by default — use the `pages` parameter for ranges in larger PDFs), PNG / JPG / TIFF / SVG (multimodal visual input), plain text, markdown, code.
+
+Native `Read` tool does NOT work for: DOCX, XLSX. For those, use the SWS-provided helpers (see "I/O wrapper inventory" below). Do NOT install ad-hoc parsers (`python-docx`, `openpyxl`, `pdfplumber`, etc.) — they are pre-installed in the per-paper venv as part of `requirements/sws-deps.txt`, and the wrappers are the only sanctioned entry point.
+
+Cycle #7 ships READ wrappers only. WRITE wrappers (for editing the actual manuscript .docx and proposal .xlsx) ship in cycle #8 with the `reviser` and `style-enforcer` agents.
 
 ### R4 — Token discipline
 
@@ -77,3 +81,16 @@ Follow the SWS agent contract: source ${CLAUDE_PLUGIN_ROOT}/scripts/agent_prelud
 ```
 
 The agent file stays under ~30 lines. Cross-cutting rules live here, not in the agent file. Future fixes touch this contract document, not seven agent files.
+
+## I/O wrapper inventory
+
+All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPER_ROOT" <wrapper> <args>`. They are pre-installed at init via `requirements/sws-deps.txt`; do not pip install anything yourself.
+
+| Script | Purpose | Cycle |
+|---|---|---|
+| `scripts/sws_read_docx.py` | Read .docx as plain text or with style annotations; supports --section and --paragraphs scoping | 7 |
+| `scripts/sws_read_xlsx.py` | Read .xlsx by sheet/range; --show-formulas preserves formula source | 7 |
+| `scripts/sws_read_pdf.py` (NOT shipped — use native Read) | PDF reading goes through native Read tool with the `pages` parameter for ranges | n/a |
+| `scripts/sws_view_image.py` (NOT shipped — use native Read) | Image viewing goes through native Read tool (multimodal input) | n/a |
+
+For DOCX/XLSX writes, do NOT attempt them in cycle #7 — they're scoped to cycle #8.
