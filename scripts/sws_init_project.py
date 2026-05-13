@@ -16,7 +16,9 @@ CLI subcommands wrap these for skill invocation:
 from __future__ import annotations
 import argparse
 import json
+import re
 import shutil
+import subprocess
 import sys
 import unicodedata
 from dataclasses import dataclass, field
@@ -73,8 +75,43 @@ ARTICLE_TYPES = (
     "mini-review", "editorial", "methodological-paper",
     "commentary-reply", "funding-proposal",
 )
+# Profile ids (cycle #6). v0.1 keeps them aligned with article_type values
+# but they are written into a separate marker field so the resolver doesn't
+# have to map between names.
+PROFILE_IDS = ARTICLE_TYPES
 LANGUAGES = ("en", "it")
 FORMATS = ("docx", "latex")
+
+
+# Natural-language phrase -> profile id, in priority order.
+# Longer / more-specific phrases listed first so they win the regex race.
+_PROFILE_NL_PATTERNS = (
+    (r"\bmini[\s\-]?review\b", "mini-review"),
+    (r"\b(?:short[\s\-]?)?communication\b|\bcomm\b|\bletter\b", "communication"),
+    (r"\bperspective\b|\bviewpoint\b", "perspective"),
+    (r"\b(?:literature\s+)?review\b", "review-paper"),
+    (r"\beditorial\b", "editorial"),
+    (r"\bmethod(?:ological|s)\s+(?:paper|article)\b", "methodological-paper"),
+    (r"\breply\b|\bcomment\s+on\b|\brebuttal\b", "commentary-reply"),
+    (
+        r"\bfunding\s+proposal\b|\bgrant\s+proposal\b|\bprin\b|\bmur\b|\berc\b"
+        r"|\bhorizon\s+europe\b|\bcall\s+(?:for|of)\b",
+        "funding-proposal",
+    ),
+    (r"\bfull[\s\-]?article\b|\boriginal\s+(?:research\s+)?article\b|\barticle\b",
+     "full-article"),
+)
+
+
+def parse_natural_language_profile(text: str):
+    """Return a profile id if a phrase matches, else None."""
+    if not text:
+        return None
+    text = text.lower()
+    for pattern, profile in _PROFILE_NL_PATTERNS:
+        if re.search(pattern, text):
+            return profile
+    return None
 
 
 @dataclass
@@ -270,6 +307,13 @@ def build_plan(inputs: dict, conflicts: list = None, resolutions: dict = None) -
         ops.append(Op(kind="mkdir", dest="refs/nlm_uploads",
                       reason="notebooklm.enabled=true"))
 
+    # 1c. Per-paper venv bootstrap (cycle #6, D19/D20).
+    ops.append(Op(
+        kind="bootstrap_venv",
+        dest=".venv",
+        reason="per-paper Python isolation",
+    ))
+
     # 2. Conflict-resolution mv ops
     for c in conflicts:
         resolution = resolutions.get(c.cls, "skip")
@@ -404,8 +448,10 @@ def default_resolutions(conflicts) -> dict:
 
 def _marker_vars(inputs: dict) -> dict:
     """Render-time vars dict for the marker template."""
+    profile = inputs.get("profile")
     return {
         "article_type": inputs["article_type"],
+        "profile": profile if profile else "null",
         "language": inputs["language"],
         "format": inputs["format"],
         "target_journal": inputs.get("target_journal") or "null",
@@ -508,6 +554,28 @@ def _execute_op(op, project_root, plugin_root, undo: list) -> None:
         out.write_text(json.dumps(op.extra["content"], indent=2, sort_keys=True))
         undo.append(op)
 
+    elif op.kind == "bootstrap_venv":
+        venv_dir = project_root / op.dest
+        py = venv_dir / "bin" / "python"
+        # Idempotent: if usable interpreter already exists, no-op.
+        if py.exists():
+            return
+        import os
+        skip_pip = os.environ.get("SWS_TEST_SKIP_PIP") == "1"
+        subprocess.run(
+            [sys.executable, "-m", "venv", str(venv_dir)],
+            check=True, capture_output=True,
+        )
+        req = plugin_root / "requirements" / "sws-deps.txt"
+        if not skip_pip and req.exists():
+            pip = venv_dir / "bin" / "pip"
+            subprocess.run(
+                [str(pip), "install", "-r", str(req)],
+                check=False,  # do not abort init on pip network failures
+                capture_output=True,
+            )
+        undo.append(op)
+
     elif op.kind == "append_sws_section":
         target = project_root / op.dest
         if not target.exists():
@@ -568,6 +636,11 @@ def _rollback_op(op, project_root) -> None:
         target = project_root / op.dest
         if target.exists():
             target.unlink()
+
+    elif op.kind == "bootstrap_venv":
+        venv_dir = project_root / op.dest
+        if venv_dir.is_dir():
+            shutil.rmtree(venv_dir, ignore_errors=True)
 
     elif op.kind == "append_sws_section":
         target = project_root / op.dest

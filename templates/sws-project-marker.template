@@ -1,6 +1,7 @@
 ---
 sws_version: 0.1
 article_type: ${article_type}
+profile: ${profile}
 language: ${language}
 format: ${format}
 target_journal: ${target_journal}
