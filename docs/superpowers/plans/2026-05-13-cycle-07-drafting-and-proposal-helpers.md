@@ -1681,6 +1681,20 @@ Present the comparison.md to the user. Wait for explicit go/no-go. Do NOT procee
 
 ---
 
+## Phase 2.5 — I/O wrapper hotfix (mid-cycle add per user feedback 2026-05-14)
+
+Discovered during phase-2 beta-test: native Read tool fails on .docx (probably also .xlsx). Contract R3 overpromises. Fix lands in this PR before phase 3 dispatches the remaining agents (so their prompts can reference the wrappers correctly).
+
+### Task 16a: scripts/sws_read_docx.py + 6+ tests
+### Task 16b: scripts/sws_read_xlsx.py + 5+ tests
+### Task 16c: rewrite R3 in references/agent-contract.md + add I/O wrapper inventory section
+### Task 16d: update skills/install-deps/SKILL.md post-install message
+### Task 16e: spec doc update (D22 + spec deliverables list)
+
+(See git history for the actual implementation; this section documents the addition.)
+
+---
+
 ## Phase 3 — Remaining 5 agents + orchestrator + remaining skills
 
 Once phase 2 is approved, dispatch the 5 remaining-agent tasks in parallel (subagent-driven-development pattern). Each agent task is self-contained: write the agent file, no separate test (agents are tested via the smoke in phase 4).
@@ -2822,3 +2836,5 @@ All 21 D-decisions covered.
 **Type consistency:** `route_section(section_id, profile)` signature consistent across Task 28 + smoke step 5b. `parse_citation_key` signature consistent. `build_manifest`, `_extract_year`, `sidecar_path`, `write_baseline`, `baseline_matches`, `BaselineMissing`, `ParseError`, `ManifestBuildError`, `RouteError` all defined where used.
 
 **Phase-2 gate is explicit:** Task 16 step 4 has "STOP HERE" + explicit user-approval requirement before phase 3 dispatch.
+
+**Phase 2.5 added 2026-05-14:** I/O wrapper layer (D22). Two new scripts, contract R3 rewrite, install-deps message expansion. All five tasks (16a-16e) commit individually.

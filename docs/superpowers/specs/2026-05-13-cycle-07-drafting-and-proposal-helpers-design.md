@@ -41,6 +41,8 @@ deliverables:
   scripts:
     - scripts/agent_should_run.sh           # thin wrapper over resolve_overlay.py --agent <id>; checks agents_active/agents_inactive
     - scripts/sws_extract_zotero_manifest.py # invoked by /sws:prepare-lit-context; wraps user's zotero skill output
+    - scripts/sws_read_docx.py
+    - scripts/sws_read_xlsx.py
 
   agents:
     - agents/outline-architect.md           # Sonnet 4.6 high
@@ -164,6 +166,10 @@ locked_decisions:
   D21_phasing_internal_to_one_PR:
     choice: "Cycle #7 ships as one PR with four internal phases (Q11=C/build-strategy=C). Phase 1: scaffolding + outline-architect + drafter-flagship + minimal skills. Phase 2: beta-test gate against Procentese perspective. Phase 3: remaining 5 agents (parallel subagent dispatch) + orchestrator mode + remaining skills. Phase 4: end-to-end smoke."
     rationale: "Captures vertical-slice beta-value-early without splitting the roadmap. Mid-cycle smoke catches scaffolding flaws before they propagate to 4 more agents."
+
+  D22_io_wrapper_layer:
+    choice: "Cycle #7 ships scripts/sws_read_docx.py + scripts/sws_read_xlsx.py wrappers (python-docx + openpyxl-based) because native Read tool fails on DOCX/XLSX. R3 in references/agent-contract.md updated to reflect: native Read for PDF + images; SWS wrappers for DOCX + XLSX. WRITE wrappers deferred to cycle #8 (reviser + style-enforcer needs)."
+    rationale: "Discovered during phase-2 beta-test on the Procentese perspective .docx. Contract was honest-broken — agents would either fail on the binary or silently fall back to ad-hoc python-docx installs. Ship the wrappers + fix the contract in the same PR so phase-3 agent prompts can reference them correctly from day one."
 
 cross_cutting_agent_contract:
   description: "Content for references/agent-contract.md. Linked from every cycle-#7 agent file. Future agents (cycles #8–#11) inherit the same rules."
