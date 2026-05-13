@@ -1,0 +1,9 @@
+word_total: 8000
+abstract_style: structured
+sections:
+  - { id: summary, label: Summary, word_limit: 500, required: true }
+  - { id: state-of-the-art, label: State of the art, word_limit: 1500, required: true }
+  - { id: objectives, label: Objectives, word_limit: 1000, required: true }
+  - { id: methodology, label: Methodology, word_limit: 2500, required: true }
+  - { id: workplan, label: Workplan, word_limit: 1500, required: true }
+  - { id: impact, label: Impact, word_limit: 1000, required: true }
