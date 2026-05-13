@@ -45,8 +45,6 @@ SCHEMA_DEFAULTS = {
     "agents_inactive": [],
 }
 
-LIST_FIELDS = {"sections", "agents_active", "agents_inactive"}
-
 
 def parse_frontmatter(path: Path) -> dict:
     """Read a markdown file's YAML frontmatter into a dict.

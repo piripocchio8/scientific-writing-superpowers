@@ -16,17 +16,19 @@ export SWS_TEST_SKIP_PIP=1
 
 # Bootstrap a minimal .venv/bin/ layout. We don't run `python3 -m venv` here
 # because the resolver needs PyYAML — letting the venv's site-packages take
-# over would hide the dev env's yaml. Instead, we make .venv/bin/python a
-# direct symlink to a python that has PyYAML. The sws_python.sh wrapper only
-# requires .venv/bin/python to exist and be executable.
+# over would hide the host's yaml. Instead, we make .venv/bin/python a direct
+# symlink to a python that has PyYAML. The sws_python.sh wrapper only requires
+# .venv/bin/python to exist and be executable.
+#
+# Resolution order: system python3 (if PyYAML available) → $SWS_SMOKE_PYTHON
+# (developer override, set to any python interpreter with PyYAML installed).
 mkdir -p "$TMP/.venv/bin"
-DEV_PY="/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python"
-if [[ -x "$DEV_PY" ]]; then
-    ln -s "$DEV_PY" "$TMP/.venv/bin/python"
-elif python3 -c "import yaml" 2>/dev/null; then
+if python3 -c "import yaml" 2>/dev/null; then
     ln -s "$(command -v python3)" "$TMP/.venv/bin/python"
+elif [[ -n "${SWS_SMOKE_PYTHON:-}" && -x "${SWS_SMOKE_PYTHON}" ]]; then
+    ln -s "${SWS_SMOKE_PYTHON}" "$TMP/.venv/bin/python"
 else
-    echo "FAIL: no python with PyYAML found for smoke (need dev env or system python3 with pyyaml)" >&2
+    echo "FAIL: no python with PyYAML found for smoke (system python3 needs pyyaml installed, or set SWS_SMOKE_PYTHON to a python that has it)" >&2
     exit 1
 fi
 
