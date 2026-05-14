@@ -4,6 +4,7 @@
 # this matrix into their agents_inactive frontmatter field. Tests cross-check.
 #
 # Cycle-#7 update: drafter splits into drafter-flagship + drafter-fast (D6).
+# Cycle-#8 update: reviser splits into reviser-full + reviser-fast (same slot pattern).
 # caption-writer is INVARIANT-ACTIVE across all profiles (user instruction
 # 2026-05-13) — never appears in any per_profile_inactive list.
 roster:
@@ -16,7 +17,8 @@ roster:
   - drafter-fast
   - methods-writer
   - caption-writer
-  - reviser
+  - reviser-full
+  - reviser-fast
   - humanizer
   - style-enforcer
   - consistency-checker
