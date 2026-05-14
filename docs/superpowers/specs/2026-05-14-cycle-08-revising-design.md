@@ -2,7 +2,7 @@
 sws_artifact: cycle-08-spec
 artifact_version: 0.1
 locked: 2026-05-14
-title: "Cycle #8 — Revising (5 agents, 5 skills, 3 wrapper scripts, 1 reference doc, 1 linter)"
+title: "Cycle #8 — Revising (5 agents, 6 skills, 3 wrapper scripts, 1 reference doc, 1 linter)"
 
 cycle_index: 8
 original_roadmap_index: 6
@@ -63,6 +63,7 @@ deliverables:
     - skills/enforce-style/SKILL.md            # /sws:enforce-style (style-enforcer on a single .docx)
     - skills/check-consistency/SKILL.md        # /sws:check-consistency (consistency-checker standalone)
     - skills/lint-ai-tells/SKILL.md            # /sws:lint-ai-tells <file> (linter standalone)
+    - skills/humanize/SKILL.md                 # /sws:humanize <file> (humanizer agent standalone — added 2026-05-14 per D3 reversal, see below)
   profile_updates:
     - profiles/full-article.md                 # agents_inactive list extended for cycle-#8 agents
     - profiles/communication.md
@@ -100,9 +101,10 @@ locked_decisions:
     choice: "No separate abstract-writer agent in cycle #8. The reviser-full prompt explicitly handles abstract refinement (word-count tightening, polish) as part of a full-paper pass. Cycle-#7 D7 noted 'cycle-#8 abstract-writer agent' but locked roster count (24) does not include one — re-reading the roster confirms no abstract-writer slot."
     rationale: "Adding a 25th agent breaks the locked roster. Reviser-full owns abstract refinement; the user can also call /sws:revise-section abstract to invoke reviser-fast on the abstract specifically. v0.2 can promote abstract-writer to a real agent if usage shows it warranted."
 
-  D3_skill_surface_five_skills:
-    choice: "Five skills ship: /sws:revise-paper (sequential orchestrator), /sws:revise-section <section> (single-section reviser-fast), /sws:enforce-style (style-enforcer on a single .docx), /sws:check-consistency (consistency-checker standalone), /sws:lint-ai-tells <file> (linter standalone). The humanizer agent is reachable through /sws:revise-paper and via direct agent dispatch — no dedicated /sws:humanize skill in v0.1."
-    rationale: "Reviser-paper covers the common case. Standalone skills exist for the three diagnostic passes the user might want without re-revising the whole paper. Skipping a humanize-only skill keeps the surface small; promote in v0.2 if asked for."
+  D3_skill_surface_six_skills:
+    choice: "Six skills ship: /sws:revise-paper (sequential orchestrator), /sws:revise-section <section> (single-section reviser-fast), /sws:enforce-style (style-enforcer on a single .docx), /sws:check-consistency (consistency-checker standalone), /sws:lint-ai-tells <file> (linter standalone), /sws:humanize <file> (humanizer agent standalone)."
+    rationale: "Initial draft of this spec locked five skills with /sws:humanize deferred to v0.2. Reversed 2026-05-14 morning after confirming with the user that matsuikentaro1/humanizer_academic IS itself a single-file SKILL.md in MIT-licensed prior art — the canonical 'humanize' pattern. Porting it cost ~37 lines of SKILL.md with attribution; no agent or test churn (the agent already existed). The reversal preserves prior-art symmetry and gives the user a fast post-pass without running the full /sws:revise-paper pipeline (e.g., on a hand-written response-to-reviewers letter)."
+    history: "spec authored autonomously 2026-05-14 overnight with D3=five-skills; reversed in the same morning after user review of prior art. Skill file shipped in commit fa0a127 on cycle/08-revising."
 
   D4_orchestrator_sequential_not_parallel:
     choice: "/sws:revise-paper runs the four passes sequentially: consistency-checker → reviser-full (or reviser-fast for short profiles) → humanizer → style-enforcer. Each pass consumes the previous pass's output written to disk. No parallel fan-out — these are pipeline passes, not independent fragments."
@@ -407,8 +409,7 @@ testing:
     - "tests/fixtures/cycle_08_paper/ — extends cycle_07_paper with _drafts/<section>.md files pre-seeded (intro, results, discussion, conclusion); chemistry-formatting trigger words embedded (H2O, et al., E. coli, Figure 1.)"
 
 what_stays_v02_or_later:
-  - "abstract-writer dedicated agent — v0.2 if usage data justifies it (D2)"
-  - "/sws:humanize standalone skill — v0.2 if asked for (D3)"
+  - "abstract-writer dedicated agent — v0.2 if usage data justifies it (D2; confirmed 2026-05-14 after surveying andrehuang/Imbad0202/K-Dense-AI — no dedicated abstract-writer agent exists in prior art)"
   - "Italian section of ai-writing-tells.md / chemistry-formatting.md — v0.2+"
   - "format: latex deep handling of chemistry / style enforcement — v0.2 format-translator"
   - "Per-coauthor voice profiles for the reviser — cycle #10 style calibration"
@@ -466,9 +467,11 @@ See `what_stays_v02_or_later` in frontmatter.
 
 ## Autonomous-run caveat (for user review tomorrow)
 
-This spec was authored autonomously overnight. Every locked decision (D1–D20) carries a one-line rationale. The PR is opened in draft state so revisions before merge are friction-free. Most likely candidates for user revision:
-- D2 (no abstract-writer): roster says no, but cycle-#7 D7 implied yes — confirm.
-- D3 (5 skills, no /sws:humanize): possible user preference to add it.
-- D6 (chemistry-formatting auto vs suggest severity per category): species_names + gene_names are flagged as suggest because false positives — confirm.
-- D13 (all five agents active everywhere): vs per-profile blocking for editorial / mini-review.
-- D17 (color palette): purely cosmetic; user may want different choices.
+This spec was authored autonomously overnight. Every locked decision (D1–D20) carries a one-line rationale. Resolution by the user on 2026-05-14 morning:
+
+- D2 (no abstract-writer): **CONFIRMED.** No dedicated abstract-writer agent in andrehuang/Imbad0202/K-Dense-AI/matsuikentaro1. Reviser-full handles refinement.
+- D3 (skill surface): **REVERSED → six skills.** Added /sws:humanize standalone (adapted from matsuikentaro1/humanizer_academic, MIT). The cycle-08 deliverables list above is updated. See D3 rationale block for history.
+- D6 (chemistry severities): **CONFIRMED.** species_names + gene_names stay as suggest.
+- D7 (chemistry-formatting docx-only): **CONFIRMED.**
+
+D13 (all-active-everywhere) and D17 (colors) were not flagged for revision. The PR was un-drafted and merged after these resolutions landed.
