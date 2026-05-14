@@ -31,7 +31,7 @@ Native `Read` tool works for: PDF (text + low-resolution rendering, ≤10 pages 
 
 Native `Read` tool does NOT work for: DOCX, XLSX. For those, use the SWS-provided helpers (see "I/O wrapper inventory" below). Do NOT install ad-hoc parsers (`python-docx`, `openpyxl`, `pdfplumber`, etc.) — they are pre-installed in the per-paper venv as part of `requirements/sws-deps.txt`, and the wrappers are the only sanctioned entry point.
 
-Cycle #7 ships READ wrappers only. WRITE wrappers (for editing the actual manuscript .docx and proposal .xlsx) ship in cycle #8 with the `reviser` and `style-enforcer` agents.
+Cycle #7 shipped READ wrappers (sws_read_docx, sws_read_xlsx); cycle #8 ships WRITE wrappers (sws_write_docx, sws_restyle_docx, sws_apply_chemistry_format) plus the context-aware AI-tells linter (sws_lint_ai_tells).
 
 ### R4 — Token discipline
 
@@ -90,7 +90,9 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 |---|---|---|
 | `scripts/sws_read_docx.py` | Read .docx as plain text or with style annotations; supports --section and --paragraphs scoping | 7 |
 | `scripts/sws_read_xlsx.py` | Read .xlsx by sheet/range; --show-formulas preserves formula source | 7 |
+| `scripts/sws_write_docx.py` | Write markdown → .docx with SWS style canon | 8 |
+| `scripts/sws_restyle_docx.py` | Re-apply SWS styles to an existing .docx | 8 |
+| `scripts/sws_apply_chemistry_format.py` | Apply chemistry-formatting patterns to an existing .docx | 8 |
+| `scripts/sws_lint_ai_tells.py` | Context-aware AI-tells linter (vs grep-pass) | 8 |
 | `scripts/sws_read_pdf.py` (NOT shipped — use native Read) | PDF reading goes through native Read tool with the `pages` parameter for ranges | n/a |
 | `scripts/sws_view_image.py` (NOT shipped — use native Read) | Image viewing goes through native Read tool (multimodal input) | n/a |
-
-For DOCX/XLSX writes, do NOT attempt them in cycle #7 — they're scoped to cycle #8.
