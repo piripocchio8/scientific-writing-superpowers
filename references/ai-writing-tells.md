@@ -170,12 +170,14 @@ The grep-pass is mechanical. If the source material genuinely needs the construc
 
 - pattern: `(\w+(-\w+){2,}\s+){2,}`
   severity: warn
+  linter_rule: { min_count_per_paragraph: 2 }
   example_bad: "A data-rich, well-characterized, multi-step pipeline."
   example_fix: "A pipeline characterized at every step (Methods §2)."
   why: Stacked compound adjectives are an LLM tell; the user explicitly flagged this.
 
 - pattern: ` — [a-zA-Z]+ — `
   severity: warn
+  linter_rule: { min_count_per_paragraph: 3 }
   example_bad: "The substrate — a chiral amine — binds in the active site."
   example_fix: "The substrate (a chiral amine) binds in the active site."
   why: Em-dash overuse for parenthetical asides; prefer parentheses or commas. One em-dash per page is plenty.
@@ -368,6 +370,7 @@ The grep-pass is mechanical. If the source material genuinely needs the construc
 
 - pattern: `(?im)^\s*(Furthermore|Moreover|Additionally|However|Nevertheless|Nonetheless),`
   severity: warn
+  linter_rule: { min_count_per_paragraph: 2 }
   example_bad: "Furthermore, the data show..."
   example_fix: Restructure the sentence so the substantive subject comes first.
   why: Sentence-initial connective adverb is fine in moderation; flag for review when it appears at the start of three-or-more consecutive paragraphs.

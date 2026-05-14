@@ -13,7 +13,7 @@ disclosure_required: true
 cover_letter_required: true
 supplementary_allowed: false
 refs_style: numbered
-agents_active: []
+agents_active: [outline-architect, drafter-flagship, drafter-fast, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker]
 agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer]
 ---
 
