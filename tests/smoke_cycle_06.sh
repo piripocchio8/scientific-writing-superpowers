@@ -80,11 +80,11 @@ else
     exit 1
 fi
 
-# Step 4: agent_prelude active for drafter
-if bash -c "source '$PLUGIN_ROOT/scripts/agent_prelude.sh' drafter; [[ \"\$RESOLVED_OK\" == \"1\" ]] && [[ -n \"\$RESOLVED_REF_CAP\" ]]"; then
-    say_pass "step 4 (drafter prelude OK, REF_CAP set)"
+# Step 4: agent_prelude active for drafter-flagship (updated from 'drafter' after cycle-07 split)
+if bash -c "source '$PLUGIN_ROOT/scripts/agent_prelude.sh' drafter-flagship; [[ \"\$RESOLVED_OK\" == \"1\" ]] && [[ -n \"\$RESOLVED_REF_CAP\" ]]"; then
+    say_pass "step 4 (drafter-flagship prelude OK, REF_CAP set)"
 else
-    say_fail "step 4 (drafter prelude failed)"
+    say_fail "step 4 (drafter-flagship prelude failed)"
     exit 1
 fi
 
@@ -107,10 +107,10 @@ from sws_hook_utils import write_marker_field
 from pathlib import Path
 write_marker_field(Path('$PAPER_ROOT/.sws-project.local.md'), 'profile', None)
 "
-if bash -c "source '$PLUGIN_ROOT/scripts/agent_prelude.sh' drafter; [[ \"\$RESOLVED_OK\" == \"0\" ]]" 2>/dev/null; then
-    say_pass "step 6 (drafter aborts with profile null)"
+if bash -c "source '$PLUGIN_ROOT/scripts/agent_prelude.sh' drafter-flagship; [[ \"\$RESOLVED_OK\" == \"0\" ]]" 2>/dev/null; then
+    say_pass "step 6 (drafter-flagship aborts with profile null)"
 else
-    say_fail "step 6 (drafter ran with profile null)"
+    say_fail "step 6 (drafter-flagship ran with profile null)"
     exit 1
 fi
 

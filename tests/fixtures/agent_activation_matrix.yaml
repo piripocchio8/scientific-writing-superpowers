@@ -25,7 +25,7 @@ roster:
   - peer-reviewer
   - code-reviewer
   - claim-verifier
-  - plagiarism-screener
+  - bibliography-fidelity-checker
   - plot-maker
   - data-curator
   - bibliography-curator
@@ -44,4 +44,4 @@ per_profile_inactive:
   editorial: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast]
   methodological-paper: [proposal-budget-helper, proposal-compliance-helper]
   commentary-reply: [proposal-budget-helper, proposal-compliance-helper, methods-writer]
-  funding-proposal: [response-to-reviewers, methods-writer, drafter-fast]
+  funding-proposal: [response-to-reviewers, methods-writer, drafter-fast, claim-verifier, bibliography-fidelity-checker]

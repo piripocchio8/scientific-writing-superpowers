@@ -18,7 +18,7 @@ ROSTER = {
     "literature-searcher", "drafter-flagship", "drafter-fast",
     "methods-writer", "caption-writer",
     "reviser-full", "reviser-fast", "humanizer", "style-enforcer", "consistency-checker",
-    "peer-reviewer", "code-reviewer", "claim-verifier", "plagiarism-screener",
+    "peer-reviewer", "code-reviewer", "claim-verifier", "bibliography-fidelity-checker",
     "plot-maker", "data-curator", "bibliography-curator", "cover-letter-writer",
     "response-to-reviewers", "nlm-librarian", "proposal-budget-helper",
     "proposal-compliance-helper",
