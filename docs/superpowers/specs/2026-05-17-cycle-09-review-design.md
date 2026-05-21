@@ -2,7 +2,7 @@
 sws_artifact: cycle-09-spec
 artifact_version: 0.1
 locked: 2026-05-17
-title: "Cycle #9 — Review (3 agents, 4 skills, 2 scripts, 1 reference doc, banner flip to 🧪 v0.1 alpha)"
+title: "Cycle #9 — Review (3 agents, 4 skills, 2 scripts, 1 reference doc, banner flip to 🧪 v0.1 alpha). Plagiarism-screener refocused to bibliography-fidelity-checker per user instruction 2026-05-17."
 
 cycle_index: 9
 original_roadmap_index: 7
@@ -17,41 +17,41 @@ sources:
     - "cycle-08 D9: _review/ established as the SWS-managed review directory; consistency-checker writes there"
     - "cycle-08 D12: section-router action axis (5 actions: draft|revise|consistency|style|lint) — cycle #9 adds a 6th (review)"
   related_memory:
-    - "claude_memory/project_roster_v0.1.md (peer-reviewer Opus 4.7 max; claim-verifier + plagiarism-screener Sonnet 4.6 high)"
+    - "claude_memory/project_roster_v0.1.md (peer-reviewer Opus 4.7 max; claim-verifier + bibliography-fidelity-checker Sonnet 4.6 high; roster #16 renamed 2026-05-17)"
     - "claude_memory/reference_external_tools.md (Semantic Scholar = primary citation graph; PubMed via MCP; user's peer-review skill wrapped end-to-end)"
     - "claude_memory/feedback_subagent_dispatch.md (sequential dispatch with explicit arg-passing this cycle, not fan-out)"
     - "claude_memory/feedback_integration_smoke.md (smoke_cycle_09.sh = the canonical task-13 verification)"
 
 scope:
-  deliverable: "First usable review pipeline. End of cycle: a user who has revised a paper via /sws:revise-paper (cycle #8) can run /sws:review-paper to take the final .docx through claim-verifier → plagiarism-screener → peer-reviewer in sequence, producing one report per agent in _review/<agent>/, with the peer-reviewer explicitly receiving the prior two reports as input. Banner and plugin version bump to alpha. Full writing+review track is usable end-to-end."
+  deliverable: "First usable review pipeline. End of cycle: a user who has revised a paper via /sws:revise-paper (cycle #8) can run /sws:review-paper to take the final .docx through claim-verifier → bibliography-fidelity-checker → peer-reviewer in sequence, producing one report per agent in _review/<agent>/, with the peer-reviewer explicitly receiving the prior two reports as input (and a skip-state env var when fidelity is inert because the user has no zotero skill or empty Zotero library). Banner and plugin version bump to alpha. Full writing+review track is usable end-to-end."
   not_in_scope:
     - "Sprint-contracts paper-blind phase for peer-reviewer (deferred to cycle #9.1 follow-up per user instruction 2026-05-17)"
     - "Concession-threshold scoring (dormant until response-to-reviewers ships in cycle #10)"
-    - "Text-similarity plagiarism detection (n-gram fuzzy match, embedding similarity) — v0.2 backlog; v0.1 plagiarism-screener is stub-only"
-    - "Self-plagiarism check against user's prior Zotero items — v0.2 backlog"
+    - "Unbounded-corpus plagiarism detection (Crossref Similarity Check / iThenticate paid API, Google Programmable Search opt-in) — v0.2 backlog. v0.1 bibliography-fidelity-checker only searches the user's Zotero full-text index, not the open web."
+    - "Embedding-similarity / SPECTER2 paraphrase detection — v0.2 backlog. v0.1 fidelity-check is exact-string overlap only (≥15 contiguous words)."
     - "NLM-grounded claim verification — claim-verifier uses Semantic Scholar + PubMed + Zotero only in v0.1; NLM consumer wiring deferred to cycle #11"
     - "Inline docx-comment annotations from any of the 3 reviewers (report files only; mirrors cycle-08 D15)"
     - "EIC + 3 reviewers + DA multi-persona Imbad0202 pattern as separate agents — peer-reviewer encodes all four personas in a single agent prompt for v0.1"
     - "VLM figure verification (cycle #11 / plot-maker territory)"
-    - "Funding-proposal review (claim-verifier + plagiarism-screener inactive in funding-proposal; peer-reviewer active everywhere — proposal review handled via /sws:peer-review on the proposal narrative)"
+    - "Funding-proposal review (claim-verifier + bibliography-fidelity-checker inactive in funding-proposal; peer-reviewer active everywhere — proposal review handled via /sws:peer-review on the proposal narrative)"
 
 deliverables:
   reference_docs:
     - references/peer-review-rubric.md          # EIC + 3 reviewers + DA template, MIT-attributed to Imbad0202; profile-aware section weights
   scripts:
     - scripts/sws_claim_extract.py              # text-internal claim extraction from _drafts/*.md → claims.json (assertion + citation_keys[] + section)
-    - scripts/sws_plagiarism_overlap.py         # stub plagiarism check: paragraph-level verbatim search against Semantic Scholar abstracts of cited papers via DOI
+    - scripts/sws_bibliography_fidelity.py      # verbatim-overlap check: paragraphs vs Zotero full-text index. Wraps the zotero skill's full-text search API. Has --probe mode to detect whether zotero skill + non-empty library are available.
   agents:
     - agents/peer-reviewer.md                   # Opus 4.7 max — wraps user's peer-review skill end-to-end; encodes EIC/3-reviewer/DA in one prompt
     - agents/claim-verifier.md                  # Sonnet 4.6 high — runs sws_claim_extract.py, then verifies each claim against Semantic Scholar / PubMed / Zotero
-    - agents/plagiarism-screener.md             # Sonnet 4.6 high — runs sws_plagiarism_overlap.py, interprets findings, writes report
+    - agents/bibliography-fidelity-checker.md   # Sonnet 4.6 high — RENAMED from plagiarism-screener (roster v0.1 #16). Runs sws_bibliography_fidelity.py, interprets hits, writes report. Degrades gracefully when zotero skill absent or library empty.
   skills:
     - skills/peer-review/SKILL.md               # /sws:peer-review (standalone or single-section via --section arg)
     - skills/verify-claims/SKILL.md             # /sws:verify-claims (standalone; runs claim-verifier on _drafts/*.md or a final .docx)
-    - skills/check-plagiarism/SKILL.md          # /sws:check-plagiarism (standalone; runs plagiarism-screener on a final .docx)
-    - skills/review-paper/SKILL.md              # /sws:review-paper (sequential orchestrator: claim → plagiarism → peer; passes prior report paths into peer-reviewer)
+    - skills/check-fidelity/SKILL.md            # /sws:check-fidelity (standalone; runs bibliography-fidelity-checker on a final .docx). RENAMED from /sws:check-plagiarism.
+    - skills/review-paper/SKILL.md              # /sws:review-paper (sequential orchestrator: claim → fidelity → peer; passes prior report paths into peer-reviewer)
   profile_updates:
-    - profiles/full-article.md                  # agents_active picks up [peer-reviewer, claim-verifier, plagiarism-screener]
+    - profiles/full-article.md                  # agents_active picks up [peer-reviewer, claim-verifier, bibliography-fidelity-checker]
     - profiles/communication.md
     - profiles/perspective.md
     - profiles/review-paper.md
@@ -59,9 +59,9 @@ deliverables:
     - profiles/editorial.md
     - profiles/methodological-paper.md
     - profiles/commentary-reply.md
-    - profiles/funding-proposal.md              # peer-reviewer active; claim-verifier + plagiarism-screener INACTIVE (D10)
+    - profiles/funding-proposal.md              # peer-reviewer active; claim-verifier + bibliography-fidelity-checker INACTIVE (D10)
   reference_updates:
-    - references/agent-contract.md              # R3 I/O inventory extended with _review/peer-reviewer/, _review/claim-verifier/, _review/plagiarism-screener/ shapes
+    - references/agent-contract.md              # R3 I/O inventory extended with _review/peer-reviewer/, _review/claim-verifier/, _review/bibliography-fidelity-checker/ shapes
   router_updates:
     - scripts/sws_section_router.py             # 6th action axis: review
   memory_updates:
@@ -72,39 +72,48 @@ deliverables:
     - .claude-plugin/plugin.json                # version 0.0.1 → 0.1.0-alpha
   tests:
     - tests/test_claim_extract.py
-    - tests/test_plagiarism_overlap.py
+    - tests/test_bibliography_fidelity.py       # RENAMED from test_plagiarism_overlap.py. Covers zotero-available path, zotero-skill-absent path, zotero-installed-but-empty-library path.
     - tests/test_section_router_review_action.py
     - tests/test_profile_activation_review_agents.py
-    - tests/smoke_cycle_09.sh                   # 16-step e2e against the cycle-08 fixture, extended
+    - tests/smoke_cycle_09.sh                   # 17-step e2e against the cycle-08 fixture, extended (17 steps after adding the zotero-absent fallback assertion)
 
 locked_decisions:
   D1: |
-    3 new agents: peer-reviewer (Opus 4.7 max), claim-verifier (Sonnet 4.6 high), plagiarism-screener (Sonnet 4.6 high).
+    3 new agents: peer-reviewer (Opus 4.7 max), claim-verifier (Sonnet 4.6 high), bibliography-fidelity-checker (Sonnet 4.6 high).
     All three diagnose-only per Review-Then-Act. No writes to manuscript .docx.
-    Rationale: locked by roster v0.1 + arch sketch §7.
+    bibliography-fidelity-checker is the renamed roster v0.1 agent #16 (was "plagiarism-screener"). Renamed per user instruction 2026-05-17
+    after the abstract-only stub was judged not useful enough to ship under the plagiarism name. The agent's actual job is checking
+    for verbatim overlap with papers in the user's Zotero corpus, not unbounded-corpus plagiarism detection.
+    Roster file (claude_memory/project_roster_v0.1.md, gitignored) MUST be updated as a side-effect of this cycle.
+    Rationale: locked by roster v0.1 (#13/#15/#16) + arch sketch §7 with the #16 rename approved 2026-05-17.
 
   D2: |
-    4 skills: /sws:peer-review, /sws:verify-claims, /sws:check-plagiarism, /sws:review-paper (sequential orchestrator).
+    4 skills: /sws:peer-review, /sws:verify-claims, /sws:check-fidelity, /sws:review-paper (sequential orchestrator).
+    /sws:check-fidelity is renamed from the originally-planned /sws:check-plagiarism, matching the D1 agent rename.
     Mirrors cycle-#8 pattern (3 atomic + 1 orchestrator).
     Rationale: orchestrator gives ergonomic single-command review; atomics give flexibility for paragraph-level concerns.
 
   D3: |
-    Orchestrator order in /sws:review-paper: claim-verifier → plagiarism-screener → peer-reviewer, fully sequential.
+    Orchestrator order in /sws:review-paper: claim-verifier → bibliography-fidelity-checker → peer-reviewer, fully sequential.
     Orchestrator MUST pass prior report paths to peer-reviewer via explicit CLI args
-    (--claim-report _review/claim-verifier/report.md --plagiarism-report _review/plagiarism-screener/report.md).
-    peer-reviewer does NOT autoscan _review/.
-    Rationale: user instruction 2026-05-17 — autoscan is unreliable; explicit arg-passing matches subagent-dispatch principle of "light context, explicit input".
+    (--claim-report _review/claim-verifier/report.md --fidelity-report _review/bibliography-fidelity-checker/report.md).
+    peer-reviewer does NOT autoscan _review/. If bibliography-fidelity-checker skipped (no Zotero), --fidelity-report is omitted and
+    peer-reviewer is told via env-var SWS_FIDELITY_STATUS=skipped:<reason> so its report can note the missing input.
+    Rationale: user instruction 2026-05-17 — autoscan is unreliable; explicit arg-passing matches subagent-dispatch principle of
+    "light context, explicit input". Skip-state propagation prevents peer-reviewer from waiting on a file that will never exist.
 
   D4: |
     _review/ directory layout (extends cycle-08 _review/consistency-report.md):
       _review/peer-reviewer/report.md
-      _review/peer-reviewer/rubric.md            # populated when sprint-contracts ship in cycle-#9.1; placeholder absent in v0.1
+      _review/peer-reviewer/rubric.md                       # populated when sprint-contracts ship in cycle-#9.1; absent in v0.1
       _review/claim-verifier/report.md
-      _review/claim-verifier/claims.json         # machine-readable: [{section, claim, citation_keys[], verification_status, source_match[]}]
-      _review/plagiarism-screener/report.md
-      _review/plagiarism-screener/flags.json     # machine-readable: [{paragraph_id, section, overlap_text, source_doi, similarity_method}]
+      _review/claim-verifier/claims.json                    # machine-readable: [{section, claim, citation_keys[], verification_status, source_match[]}]
+      _review/bibliography-fidelity-checker/report.md
+      _review/bibliography-fidelity-checker/flags.json      # machine-readable: [{paragraph_id, section, overlap_text, zotero_item_id, zotero_collection, page_hint}]
+      _review/bibliography-fidelity-checker/status.json     # zotero detection state: {zotero_skill_available: bool, library_item_count: int, ran: bool, skip_reason: "..."}
     Gitignored in user paper-project templates (already present in templates/ since cycle #8).
     Rationale: matches existing convention; per-agent subdir prevents collision; JSON sidecars enable downstream R&R Traceability Matrix in cycle #10.
+    status.json on fidelity-checker side gives a machine-readable skip-state for the orchestrator and for the smoke test.
 
   D5: |
     peer-reviewer wraps user's peer-review skill end-to-end. Single agent encodes all four Imbad0202 personas
@@ -130,19 +139,62 @@ locked_decisions:
     Rationale: arch sketch §5 consumption order; NLM consumer wiring isolated to cycle #11.
 
   D9: |
-    plagiarism-screener is STUB-ONLY in v0.1. sws_plagiarism_overlap.py extracts paragraphs from the final .docx
-    (via sws_read_docx.py) and does exact-string search against Semantic Scholar abstracts of papers cited in the
-    bibliography (resolved via DOI). Flags any paragraph with verbatim overlap ≥ 25 contiguous words.
-    Text-similarity (fuzzy n-gram, embeddings), self-plagiarism (Zotero own-corpus check) → v0.2 backlog.
-    Rationale: user instruction 2026-05-17 — honest about what we can ship without paid API; v0.2 entry tracks the upgrade.
+    bibliography-fidelity-checker scope: verbatim-overlap detection against the user's Zotero full-text index.
+    sws_bibliography_fidelity.py extracts paragraphs from the final .docx (via sws_read_docx.py) and queries the user's
+    Zotero library via the existing zotero skill. For each paragraph, generates candidate ≥15-word substrings and
+    submits them as exact-string queries to Zotero's full-text search. Flags any match. Reports hits with:
+      - the overlapping passage (≥15 contiguous words),
+      - the Zotero item that matched (title, authors, year, item key, collection),
+      - a page hint when Zotero's index returns one.
+    Corpus priority (mirrors arch sketch §5 "Zotero first"):
+      1. Papers cited in the manuscript bibliography (DOI/citation-key match) — the highest-risk set.
+      2. All other items in the same Zotero collection as the cited papers — catches "read but didn't cite" reproductions.
+      3. (v0.2+) Nearest-neighbor expansion via Semantic Scholar references — out of scope for v0.1.
+    Why ≥15 words (not 25): Zotero's index supports phrase search; 15-word phrases are long enough to suppress false positives
+    from common scientific phrasing ("we performed differential expression analysis") but short enough to catch the actual
+    accidental-paste error class.
+    Limitations in v0.1 (must be stated in every report.md): exact-string only — paraphrase / synonym substitution / sentence
+    reordering will not be caught. Unbounded corpus (open web, paywalled papers not in user's Zotero) not searched.
+    Rationale: user instruction 2026-05-17 — the original abstract-only stub against Semantic Scholar was theater; full-text
+    against the user's actual reading corpus (where the accidental copy-paste actually happens) is the honest useful check.
+
+  D9a: |
+    Fallback path: zotero skill not installed in the user's Claude Code environment.
+    Detection: bibliography-fidelity-checker invokes sws_bibliography_fidelity.py --probe-zotero. The script attempts to import
+    the zotero skill via its known invocation surface (best-effort — checks .claude/plugins/cache for the zotero plugin AND
+    queries `claude --list-skills 2>/dev/null` if available, or falls back to checking whether the user's profile sources
+    the zotero skill marker).
+    Behavior when not installed:
+      - Agent exits 0 (not 1 — skip is not an error).
+      - Writes _review/bibliography-fidelity-checker/status.json with {zotero_skill_available: false, ran: false, skip_reason: "zotero skill not installed"}.
+      - Writes _review/bibliography-fidelity-checker/report.md with a single-paragraph note explaining what was skipped and how to enable (install the zotero skill).
+      - /sws:review-paper orchestrator sees status.json and propagates SWS_FIDELITY_STATUS=skipped:no-zotero-skill to peer-reviewer.
+    Rationale: graceful degradation matches the nlm-librarian / notebooklm.enabled=false pattern from arch sketch §3.
+    Never fail; always inform.
+
+  D9b: |
+    Fallback path: zotero skill installed but library is empty or unusable.
+    Detection: probe call returns zotero_skill_available=true but the user's Zotero library has fewer than 10 items
+    OR fails to respond within 30s OR returns a permission error.
+    Behavior when unusable:
+      - Agent exits 0.
+      - Writes status.json with {zotero_skill_available: true, library_item_count: <n>, ran: false, skip_reason: "zotero library too small to be a useful fidelity corpus" | "zotero skill unresponsive" | "zotero permission denied"}.
+      - Writes report.md with a note explaining what was skipped and what threshold was applied.
+      - Orchestrator propagates SWS_FIDELITY_STATUS=skipped:<reason> to peer-reviewer.
+    The 10-item threshold is a sanity floor — fewer than 10 items is essentially "no curated corpus" and any hit would be misleading.
+    Rationale: same graceful-degradation principle as D9a. The 10-item floor is conservative and clearly stated so the user
+    can override via the v0.2 backlog if they want stricter or laxer thresholds.
 
   D10: |
     Per-profile agent activation matrix (extends cycle-#8 matrix):
-      - peer-reviewer:        ACTIVE in all 9 profiles (already locked by cycle-#7 test).
-      - claim-verifier:       ACTIVE in [full-article, communication, perspective, review-paper, mini-review,
-                                          editorial, methodological-paper, commentary-reply].
-                              INACTIVE in [funding-proposal] — proposals have unverified-by-design forward-looking claims.
-      - plagiarism-screener:  same as claim-verifier (active 8 / inactive funding-proposal).
+      - peer-reviewer:                    ACTIVE in all 9 profiles (already locked by cycle-#7 test).
+      - claim-verifier:                   ACTIVE in [full-article, communication, perspective, review-paper, mini-review,
+                                                     editorial, methodological-paper, commentary-reply].
+                                          INACTIVE in [funding-proposal] — proposals have unverified-by-design forward-looking claims.
+      - bibliography-fidelity-checker:    same as claim-verifier (active 8 / inactive funding-proposal).
+                                          The fidelity check is meaningful only when the manuscript has a bibliography; funding
+                                          proposals do reference some published work but the corpus risk profile is different
+                                          and the v0.1 check would mostly fire on standard methodological boilerplate.
     Rationale: funding proposals describe planned work; "verifying" forward-looking claims is category-mismatched.
     Proposal review goes through /sws:peer-review on the narrative.
 
@@ -156,36 +208,42 @@ locked_decisions:
   D12: |
     I/O wrappers: all 3 review agents are prose-only diagnostic agents. They use existing sws_read_docx.py to read
     the manuscript .docx. They DO NOT write to the manuscript. They write only to _review/<agent>/ (plain markdown + JSON).
-    No new wrapper scripts needed beyond the two domain scripts (sws_claim_extract.py, sws_plagiarism_overlap.py).
+    No new wrapper scripts needed beyond the two domain scripts (sws_claim_extract.py, sws_bibliography_fidelity.py).
     Rationale: minimizes ad-hoc python deps; honors agent-contract R3 from cycle #7.
 
   D13: |
-    v0.2 backlog additions (5 entries):
-      1. Text-similarity plagiarism (n-gram fuzzy match + embedding similarity against Semantic Scholar full corpus)
-      2. Self-plagiarism detection against user's own Zotero items
-      3. Sprint-contracts paper-blind enforcement for peer-reviewer (Phase 1 rubric commit before Phase 2 paper read)
-      4. Concession-threshold scoring for response-to-reviewers (1–5 scoring; concessions ≥4; no consecutive concessions)
-      5. NLM consumer wiring for claim-verifier (delegate grounded RAG to nlm-librarian when notebooklm.enabled=true)
+    v0.2 backlog additions (7 entries):
+      1. Unbounded-corpus plagiarism detection — proper Crossref Similarity Check / iThenticate API integration (paid; opt-in via marker).
+      2. Google Programmable Search Engine opt-in path for users without Zotero (free tier 100/day; user provides API key + cx).
+      3. Embedding / SPECTER2 paraphrase detection on top of bibliography-fidelity-checker (catches reworded copy, not just verbatim).
+      4. Nearest-neighbor corpus expansion for fidelity-checker (Semantic Scholar references of cited papers — broader corpus when user opts in).
+      5. Sprint-contracts paper-blind enforcement for peer-reviewer (Phase 1 rubric commit before Phase 2 paper read).
+      6. Concession-threshold scoring for response-to-reviewers (1–5 scoring; concessions ≥4; no consecutive concessions).
+      7. NLM consumer wiring for claim-verifier (delegate grounded RAG to nlm-librarian when notebooklm.enabled=true).
     Rationale: explicit deferrals captured for future-self; prevents scope creep within cycle #9.
 
   D14: |
     section-router 6th action axis: review. Maps {section, action=review} → {agent: peer-reviewer (single-section mode)}.
-    Single-section review only routes to peer-reviewer (not claim-verifier / plagiarism-screener) because claim and
-    plagiarism checks are paper-wide by nature; per-section limits would give false confidence.
+    Single-section review only routes to peer-reviewer (not claim-verifier / bibliography-fidelity-checker) because claim and
+    fidelity checks are paper-wide by nature; per-section limits would give false confidence.
     Rationale: matches /sws:review-paper full-paper orchestration; single-section is a peer-reviewer-only concern.
 
   D15: |
-    Smoke test smoke_cycle_09.sh extends the cycle-08 fixture. 16 steps:
+    Smoke test smoke_cycle_09.sh extends the cycle-08 fixture. 17 steps:
       1–8: cycle-08 baseline reproducible (drafts → consistency → revise → style → final .docx)
       9:   /sws:verify-claims → _review/claim-verifier/{report.md, claims.json}
-      10:  /sws:check-plagiarism → _review/plagiarism-screener/{report.md, flags.json}
+      10:  /sws:check-fidelity → _review/bibliography-fidelity-checker/{report.md, flags.json, status.json}
+            (Fixture runs WITHOUT zotero skill installed by default — asserts the D9a fallback path:
+             status.json.ran == false, skip_reason == "zotero skill not installed", report.md is informative not empty.)
       11:  /sws:peer-review → _review/peer-reviewer/report.md (no rubric.md in v0.1)
       12:  /sws:review-paper (orchestrator) → all three reports populated in one run
-      13:  assert peer-reviewer received --claim-report and --plagiarism-report args (via mock-args trace)
+      13:  assert peer-reviewer received --claim-report and (in the no-zotero fixture) SWS_FIDELITY_STATUS=skipped:no-zotero-skill
       14:  assert claim-verifier degrades gracefully when notebooklm.enabled=false (no errors, no NLM calls)
-      15:  assert profile activation: claim-verifier exits 0 with v0.1-unsupported message in funding-proposal
+      15:  assert profile activation: claim-verifier + fidelity-checker exit 0 with v0.1-unsupported message in funding-proposal
       16:  assert README banner string matches 🧪 v0.1 alpha + plugin.json version 0.1.0-alpha
+      17:  separate fixture variant with mocked-zotero-skill-available: /sws:check-fidelity runs to completion and writes ≥1 flag against the seeded fidelity-violation paragraph (text copy-pasted from a fixture Zotero item) (asserts D9 happy-path end-to-end).
     Rationale: feedback_integration_smoke.md — every multi-step plan's final task = real e2e smoke.
+    Two fixture variants (no-zotero default + mocked-zotero) cover both fallback states and the happy path.
 
   D16: |
     Profile-aware peer-review rubric. references/peer-review-rubric.md ships per-profile section weights:
@@ -205,38 +263,60 @@ locked_decisions:
     Subagent dispatch policy for /sws:review-paper orchestrator. Each of the 3 review agents runs as a separate
     subagent dispatch (not parallel — sequential per D3). peer-reviewer dispatch passes:
       --claim-report ${PAPER_ROOT}/_review/claim-verifier/report.md
-      --plagiarism-report ${PAPER_ROOT}/_review/plagiarism-screener/report.md
+      --fidelity-report ${PAPER_ROOT}/_review/bibliography-fidelity-checker/report.md   # OMITTED if status.json.ran=false
       --manuscript ${PAPER_ROOT}/Manuscript/<active-docx>
-    peer-reviewer reads all three explicitly. Orchestrator does NOT read agent outputs and pass them inline — peer-reviewer
-    reads from the filesystem given the paths. This matches cycle-#8 /sws:revise-paper pattern.
+    Plus environment variable SWS_FIDELITY_STATUS = "ran" | "skipped:no-zotero-skill" | "skipped:zotero-library-too-small" |
+    "skipped:zotero-unresponsive" | "skipped:zotero-permission-denied".
+    peer-reviewer reads the report files from the filesystem given the paths. When SWS_FIDELITY_STATUS != "ran", peer-reviewer's
+    report.md includes a one-line note that the fidelity check was skipped and why, so the user knows that branch of the review
+    was not exercised. Orchestrator does NOT read agent outputs and pass them inline. Matches cycle-#8 /sws:revise-paper pattern.
     Rationale: keeps orchestrator stateless; agent outputs are durable on filesystem; matches feedback_subagent_dispatch.md.
+    Explicit skip-state communication prevents silent "I checked everything" claims when one of the checks was inert.
 
 testing:
   unit_tests:
-    - test_claim_extract.py            # parsing _drafts/*.md → claims.json, citation-key resolution, edge cases (no citations, multi-citation, footnotes)
-    - test_plagiarism_overlap.py       # paragraph extraction, exact-string match logic, DOI resolution failure handling, empty bibliography
-    - test_section_router_review_action.py  # review action routes only to peer-reviewer (not claim/plagiarism for single section)
-    - test_profile_activation_review_agents.py  # peer-reviewer active in 9/9, claim+plagiarism inactive in funding-proposal only
+    - test_claim_extract.py                  # parsing _drafts/*.md → claims.json, citation-key resolution, edge cases (no citations, multi-citation, footnotes)
+    - test_bibliography_fidelity.py          # paragraph extraction, ≥15-word substring generation, exact-string match logic. Three fixtures:
+                                             #   (a) zotero skill installed + library populated (mocked) → flags seeded fidelity violation
+                                             #   (b) zotero skill absent → exit 0, status.json.ran=false, skip_reason="zotero skill not installed"
+                                             #   (c) zotero skill installed + library has <10 items → exit 0, skip_reason="zotero library too small ..."
+                                             # Plus: zotero-unresponsive timeout path, permission-error path
+    - test_section_router_review_action.py   # review action routes only to peer-reviewer (not claim/fidelity for single section)
+    - test_profile_activation_review_agents.py  # peer-reviewer active in 9/9, claim+fidelity inactive in funding-proposal only
   smoke:
-    - tests/smoke_cycle_09.sh          # 16 steps per D15
+    - tests/smoke_cycle_09.sh                # 17 steps per D15 (two fixture variants: no-zotero default + mocked-zotero)
   regression:
-    - tests/smoke_cycle_07.sh          # re-baseline if router changes
-    - tests/smoke_cycle_08.sh          # re-baseline if router changes; ensure consistency-checker still writes _review/consistency-report.md (paths unchanged)
-  total_target: "~40 new unit tests; cycle baseline rises from ~390 to ~430"
+    - tests/smoke_cycle_07.sh                # re-baseline if router changes
+    - tests/smoke_cycle_08.sh                # re-baseline if router changes; ensure consistency-checker still writes _review/consistency-report.md (paths unchanged)
+  total_target: "~45 new unit tests (5 extra for the 3 fallback paths in test_bibliography_fidelity.py); cycle baseline rises from ~390 to ~435"
 
 risks:
   R1: |
-    Semantic Scholar rate limits. claim-verifier and plagiarism-screener both hit S2.
+    Semantic Scholar rate limits. claim-verifier hits S2 (and PubMed) heavily; bibliography-fidelity-checker does NOT
+    use S2 in v0.1 (queries Zotero full-text only) so the risk is now localized to claim-verifier.
     Mitigation: aggressive caching at sws_claim_extract.py output level + per-DOI memoization across the run; exponential backoff on 429.
 
   R2: |
-    Plagiarism-screener stub may produce false-confidence ("no plagiarism found" when only exact-string overlap was checked).
-    Mitigation: report.md MUST include a prominent "v0.1 LIMITATION" header stating only verbatim ≥25-word overlap is detected; text-similarity is v0.2.
-    User instruction: be honest about what we can ship.
+    Bibliography-fidelity-checker may produce false-confidence ("no overlap found" when only exact-string ≥15-word match
+    against Zotero corpus was checked, and only that corpus). Paraphrase / synonym substitution / sentence reordering will
+    not be caught. Sources outside the user's Zotero (open web, papers they haven't read) are not checked at all.
+    Mitigation: report.md MUST include a prominent "v0.1 LIMITATION" header stating exactly what was checked, what threshold
+    was applied, how many Zotero items formed the corpus, and what was NOT checked (paraphrase, open web, paywalled). The
+    bibliography-fidelity-checker is a *fidelity* check ("did I accidentally copy from a paper I've read?"), not an
+    unbounded-corpus *plagiarism* check ("was this text published anywhere first?"). Tool name and report framing both
+    enforce this distinction.
+
+  R5: |
+    Detecting "zotero skill installed in Claude Code" is brittle. Different installation paths (user plugin, project plugin,
+    marketplace, manual). False-negatives (skill is available but probe fails) would skip a useful check silently.
+    Mitigation: --probe-zotero tries three independent detection signals in order — (1) presence of zotero plugin under
+    .claude/plugins/cache, (2) `claude --list-skills` output if the CLI is available, (3) the user's profile/CLAUDE.md
+    referencing the zotero skill. Status.json records WHICH probe succeeded (or all-failed reason). User can override with
+    --force-zotero / --no-zotero flags. Probe behavior fully covered in test_bibliography_fidelity.py fixtures (c) and (d).
 
   R3: |
     peer-reviewer (Opus 4.7 max) is the most expensive agent in the plugin. A single /sws:review-paper run = ~one Opus max invocation.
-    Mitigation: doc the cost in skill README; users who only want quick checks can run /sws:verify-claims and /sws:check-plagiarism without peer-reviewer.
+    Mitigation: doc the cost in skill README; users who only want quick checks can run /sws:verify-claims and /sws:check-fidelity without peer-reviewer.
 
   R4: |
     Banner flip in same PR couples two unrelated concerns (review work + version milestone).
@@ -251,9 +331,9 @@ execution:
 
 # Cycle #9 — Review
 
-End-of-cycle goal: a user who has completed cycle-#8 revising (`/sws:revise-paper` → final `.docx`) can run `/sws:review-paper` to take that `.docx` through three diagnostic reviewers in sequence — `claim-verifier` → `plagiarism-screener` → `peer-reviewer` — with each report persisted under `_review/<agent>/` and the peer-reviewer explicitly receiving the prior two reports' paths as input. End-of-cycle banner flips to `🧪 v0.1 alpha` and `plugin.json` version bumps to `0.1.0-alpha`.
+End-of-cycle goal: a user who has completed cycle-#8 revising (`/sws:revise-paper` → final `.docx`) can run `/sws:review-paper` to take that `.docx` through three diagnostic reviewers in sequence — `claim-verifier` → `bibliography-fidelity-checker` → `peer-reviewer` — with each report persisted under `_review/<agent>/` and the peer-reviewer explicitly receiving the prior two reports' paths as input (plus a skip-state env var when fidelity is inert). End-of-cycle banner flips to `🧪 v0.1 alpha` and `plugin.json` version bumps to `0.1.0-alpha`.
 
-This spec follows the same dispatch flow as cycles #7 and #8. All locked decisions are in the frontmatter `locked_decisions:` block above (D1–D17). The body of this document is orientation only — frontmatter is the project-memory dictionary.
+This spec follows the same dispatch flow as cycles #7 and #8. All locked decisions are in the frontmatter `locked_decisions:` block above (D1–D17, with D9a + D9b for the fidelity-checker fallback paths). The body of this document is orientation only — frontmatter is the project-memory dictionary.
 
 ## What ships
 
@@ -263,13 +343,22 @@ Per arch-sketch §7, this is the cycle that makes the writing+review track usabl
 
 ## Why these scope cuts
 
-Three substantial features get explicit deferral, all per user instruction 2026-05-17:
+Four substantial features get explicit deferral, all per user instructions on 2026-05-17:
 
 1. **Sprint-contracts paper-blind Phase 1** for peer-reviewer (rubric committed before reading paper, with timestamp gate). Ship the basic pipeline first; add the discipline layer in cycle #9.1 once we have feedback on real reviews.
-2. **Text-similarity plagiarism detection** (n-gram fuzzy match, embedding similarity, self-plagiarism). The v0.1 plagiarism-screener is a stub that catches only verbatim ≥25-word overlap against cited papers' abstracts. The report file states this limitation prominently. Honest about what we can ship without a paid API.
-3. **NLM consumer wiring** for claim-verifier. The agent uses Zotero + Semantic Scholar + PubMed in v0.1 and degrades gracefully without NLM. NLM wiring happens in cycle #11 where `nlm-librarian` ships.
+2. **Unbounded-corpus plagiarism detection.** The original cycle-#9 design proposed a plagiarism-screener checking ≥25-word overlap against Semantic Scholar abstracts of cited papers. User judgment 2026-05-17: abstract-only is theater (Google Scholar searches full text; our API doesn't), so the agent was refocused — renamed to `bibliography-fidelity-checker` and rescoped to verbatim ≥15-word overlap against the user's Zotero full-text index. This catches the real common error (accidentally reproducing text from a paper you actually read), not unbounded-corpus plagiarism. The unbounded check (Crossref Similarity Check API, Google Programmable Search opt-in, embedding paraphrase detection) is in the v0.2 backlog per D13.
+3. **Concession-threshold scoring.** Dormant until response-to-reviewers ships in cycle #10.
+4. **NLM consumer wiring** for claim-verifier. The agent uses Zotero + Semantic Scholar + PubMed in v0.1 and degrades gracefully without NLM. NLM wiring happens in cycle #11 where `nlm-librarian` ships.
 
 These deferrals are tracked as explicit entries in `claude_memory/project_v02_backlog.md` per D13.
+
+## Bibliography-fidelity-checker — what "fidelity" actually means
+
+Naming this agent precisely is load-bearing. **Plagiarism** = "this text appeared somewhere before, even if you've never seen it." Detecting that requires unbounded-corpus search (industry tools: iThenticate, Crossref Similarity Check). **Fidelity** = "this text accidentally reproduces a passage from a paper that's in your reading history." Detecting that requires only the user's Zotero corpus — bounded, curated, and openly accessible via the `zotero` skill's full-text index.
+
+The fidelity check is the right scope for v0.1 because: (a) the user's Zotero is the most common source of accidental copy-paste errors during writing; (b) we can do it confidently with the tools we already have; (c) we don't pretend to be doing more than we are. The report-file framing reinforces this — every report leads with "V0.1 LIMITATION: this is a fidelity check against your Zotero library only, not unbounded-corpus plagiarism detection."
+
+Two fallback paths (D9a, D9b) handle users who don't have the `zotero` skill installed or whose Zotero library is empty/unusable. Both exit 0 with a clear `status.json` skip-state and an informative report. The orchestrator propagates that skip-state to `peer-reviewer` via `SWS_FIDELITY_STATUS` so the peer-review report can transparently note that fidelity was not exercised — never silent failure, never false confidence.
 
 ## Cross-cutting compliance
 
@@ -278,7 +367,7 @@ These deferrals are tracked as explicit entries in `claude_memory/project_v02_ba
 - **Agent-contract R3:** I/O wrappers — agents call `sws_read_docx.py` via `sws_python.sh` to read manuscript; agents write plain markdown + JSON to `_review/<agent>/`.
 - **Agent-contract R5:** no gender-default in user address, baked into all 3 agent prompts.
 - **MCP-aversion principle:** Semantic Scholar via WebFetch + small utility scripts; PubMed via the existing `claude_ai_PubMed` MCP (the documented v0.1 exception); no new MCP servers.
-- **Profile-aware activation:** peer-reviewer everywhere; claim-verifier + plagiarism-screener inactive in funding-proposal (D10).
+- **Profile-aware activation:** peer-reviewer everywhere; claim-verifier + bibliography-fidelity-checker inactive in funding-proposal (D10).
 
 ## Banner change exact strings
 
