@@ -1,6 +1,6 @@
 # Scientific-Writing-Superpowers (SWS)
 
-> 🚧 **v0.1 in design.** Implementation begins with cycle #1 (foundation). The full architecture is specified in [`docs/superpowers/specs/2026-05-08-architecture-sketch-design.md`](docs/superpowers/specs/2026-05-08-architecture-sketch-design.md).
+> 🧪 **v0.1 alpha** — usable end-to-end writing+review track (drafting, revising, review). The full architecture is specified in [`docs/superpowers/specs/2026-05-08-architecture-sketch-design.md`](docs/superpowers/specs/2026-05-08-architecture-sketch-design.md).
 
 A Claude Code plugin for scientific manuscript preparation, aimed at chemistry, biochemistry, and biology labs. SWS is **docx-first** (matching the actual submission format for most chemistry and biology journals), ships 24 specialized agents across 6 phases of the writing cycle, and uses cycle-memory hooks to make cold-restart sessions cheap and fast.
 
