@@ -10,6 +10,13 @@ predecessor: cycle-08-revising
 banner_after_completion: "🧪 v0.1 alpha"
 version_after_completion: "0.1.0-alpha"
 
+autonomous_run_caveat: |
+  Cycle #9 implementation was executed autonomously overnight on 2026-05-17 with the user's explicit
+  grant of authority ("move on and run as many agents in parallel to finish cycle 9 overnight unattended").
+  Every locked decision (D1–D17, D9a–D9c) carries a rationale so the user can re-decide any of them in the
+  morning before the PR merges. The PR is opened in DRAFT state to make tomorrow's revision low-friction.
+  Mirrors the cycle-08 autonomous-execution pattern.
+
 sources:
   architecture_sketch: "docs/superpowers/specs/2026-05-08-architecture-sketch-design.md §7 cycle table line 488 (Review phase = 3 new agents + banner flip)"
   prior_cycle_anchors:
