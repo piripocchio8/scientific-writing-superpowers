@@ -4,7 +4,7 @@ dispatch. Mirrors the tables in skills/draft-section/SKILL.md and
 skills/revise-section/SKILL.md.
 
 The router has two axes:
-  - action: draft (default) | revise | consistency | style | lint
+  - action: draft (default) | revise | consistency | style | lint | review
   - profile: publication profile or funding-proposal (applies within action=draft)
 
 The router is profile-aware (publication vs funding-proposal) but does NOT
@@ -93,9 +93,10 @@ _REVISE_MAP = {
 _CONSISTENCY_WILDCARD = "consistency-checker"
 _STYLE_WILDCARD = "style-enforcer"
 _LINT_SENTINEL = "script:sws_lint_ai_tells.py"
+_REVIEW_WILDCARD = "peer-reviewer"
 
 # Valid action values
-_VALID_ACTIONS = frozenset({"draft", "revise", "consistency", "style", "lint"})
+_VALID_ACTIONS = frozenset({"draft", "revise", "consistency", "style", "lint", "review"})
 
 
 def route_section(
@@ -116,6 +117,9 @@ def route_section(
       - ``lint``: any section_id → sentinel string
         ``"script:sws_lint_ai_tells.py"`` (callers parse this to invoke the
         script rather than dispatching an agent).
+      - ``review``: any section_id → ``peer-reviewer`` (single-section peer
+        review only; claim-verifier and bibliography-fidelity-checker are
+        paper-wide by nature and not routed per-section).
 
     section_id is lowercased and stripped before lookup.
 
@@ -139,6 +143,9 @@ def route_section(
 
     if action == "lint":
         return _LINT_SENTINEL
+
+    if action == "review":
+        return _REVIEW_WILDCARD
 
     # action == "draft" — cycle-#7 behaviour
     if profile == "funding-proposal":

@@ -18,8 +18,13 @@ disclosure_required: true
 cover_letter_required: false
 supplementary_allowed: true
 refs_style: numbered
-agents_active: [outline-architect, drafter-flagship, caption-writer, proposal-budget-helper, proposal-compliance-helper, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker]
-agents_inactive: [response-to-reviewers, methods-writer, drafter-fast]
+agents_active: [outline-architect, drafter-flagship, caption-writer, proposal-budget-helper, proposal-compliance-helper, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer]
+agents_inactive:
+  - response-to-reviewers
+  - methods-writer
+  - drafter-fast
+  - claim-verifier             # v0.1: proposals contain forward-looking claims by design
+  - bibliography-fidelity-checker  # v0.1: proposal corpus risk profile differs
 ---
 
 # Funding-proposal profile

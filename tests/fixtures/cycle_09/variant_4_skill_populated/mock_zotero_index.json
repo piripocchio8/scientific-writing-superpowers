@@ -1,0 +1,18 @@
+[
+  {
+    "item_key": "THROMBIN2021",
+    "title": "Thrombin receptor signalling via PAR1 tethered-ligand mechanism",
+    "authors": ["Coughlin SR"],
+    "year": 2021,
+    "collection": "Haemostasis",
+    "fulltext_excerpt": "Thrombin activates platelets via PAR1 cleavage of the extracellular tethered ligand domain exposing a new amino terminus that acts as a tethered ligand activating downstream signalling cascades through G-protein-coupled receptor mechanisms."
+  },
+  {
+    "item_key": "MOF2023",
+    "title": "Metal-organic frameworks as enzyme mimics: recent advances",
+    "authors": ["Smith A", "Jones B"],
+    "year": 2023,
+    "collection": "MOF Catalysis",
+    "fulltext_excerpt": "Reticular chemistry enables precise control over pore geometry and local chemical environment."
+  }
+]

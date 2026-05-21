@@ -1,0 +1,4 @@
+SQLite format 3 placeholder — not a real database.
+This file exists so the smoke script can redirect HOME to this fixture root
+and have _probe_zotero_desktop() return (True, "<path>/Zotero/zotero.sqlite")
+without needing a real Zotero installation on the CI host.
