@@ -96,3 +96,9 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 | `scripts/sws_lint_ai_tells.py` | Context-aware AI-tells linter (vs grep-pass) | 8 |
 | `scripts/sws_read_pdf.py` (NOT shipped — use native Read) | PDF reading goes through native Read tool with the `pages` parameter for ranges | n/a |
 | `scripts/sws_view_image.py` (NOT shipped — use native Read) | Image viewing goes through native Read tool (multimodal input) | n/a |
+| `_review/peer-reviewer/report.md` | YAML frontmatter dict (sws_artifact, profile, manuscript_file, decision, overall_score, section_scores, flags, fidelity_status, claim_verification_status) + body with EIC opening, four reviewer sections, DA closing | peer-reviewer |
+| `_review/claim-verifier/report.md` | Markdown report — per-claim findings grouped by section, with verification status (verified/unverified/contested) | claim-verifier |
+| `_review/claim-verifier/claims.json` | List of `{section, claim, citation_keys[], verification_status, source_match[]}` | claim-verifier |
+| `_review/bibliography-fidelity-checker/report.md` | Markdown report with V0.1 LIMITATION header + findings or skip-reason note (D9, D9a, D9b, D9c) | bibliography-fidelity-checker |
+| `_review/bibliography-fidelity-checker/flags.json` | List of `{paragraph_id, section, overlap_text, zotero_item_key, zotero_title, zotero_authors, zotero_year, zotero_collection, page_hint}` | bibliography-fidelity-checker |
+| `_review/bibliography-fidelity-checker/status.json` | Dict `{zotero_skill_available, zotero_desktop_detected, zotero_sqlite_path, ran, skip_reason, library_item_count?}` | bibliography-fidelity-checker |
