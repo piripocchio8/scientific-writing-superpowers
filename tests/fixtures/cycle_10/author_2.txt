@@ -1,0 +1,1 @@
+We prepared the samples in one batch. We then recorded each spectrum. The peaks aligned well. We assigned them by position. The data support a single species.
