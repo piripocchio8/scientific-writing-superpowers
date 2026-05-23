@@ -114,3 +114,102 @@ def feature_vector(text: str) -> Dict[str, float]:
 def pool_section_texts(texts: Sequence[str]) -> Dict[str, float]:
     """Pool (concatenate) several texts of one section type, then vectorise."""
     return feature_vector(" ".join(t for t in texts if t))
+
+
+# --- standardization + distance + Fisher fit (D8/D8a) ----------------------
+WITHIN_VAR_FLOOR = 1e-6
+
+
+def standardization_stats(vectors: Sequence[Dict[str, float]]) -> Dict[str, Tuple[float, float]]:
+    """Per-feature (mean, sd) across the anchor set; sd floored to 1.0 when ~0."""
+    stats: Dict[str, Tuple[float, float]] = {}
+    for k in FEATURE_ORDER:
+        col = [v[k] for v in vectors]
+        m = _mean(col)
+        sd = _pop_sd(col)
+        stats[k] = (m, sd if sd > 1e-12 else 1.0)
+    return stats
+
+
+def _standardize(vec: Dict[str, float], stats: Dict[str, Tuple[float, float]]) -> Dict[str, float]:
+    return {k: (vec[k] - stats[k][0]) / stats[k][1] for k in FEATURE_ORDER}
+
+
+def weighted_distance(
+    a: Dict[str, float],
+    b: Dict[str, float],
+    weights: Dict[str, float],
+    w_h: float,
+    haiku_sim: float,
+    stats: Dict[str, Tuple[float, float]],
+) -> Dict[str, object]:
+    """D = SUM_i w_i (a_i-b_i)^2 + w_h (1 - haiku_sim), on standardized features."""
+    sa = _standardize(a, stats)
+    sb = _standardize(b, stats)
+    contrib: Dict[str, float] = {}
+    total = 0.0
+    for k in FEATURE_ORDER:
+        c = weights.get(k, 0.0) * (sa[k] - sb[k]) ** 2
+        contrib[k] = c
+        total += c
+    haiku_term = w_h * (1.0 - haiku_sim)
+    contrib["_haiku"] = haiku_term
+    total += haiku_term
+    return {"distance": total, "per_feature_contrib": contrib}
+
+
+def _sq_diffs_per_feature(
+    pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
+    stats: Dict[str, Tuple[float, float]],
+) -> Dict[str, List[float]]:
+    out: Dict[str, List[float]] = {k: [] for k in FEATURE_ORDER}
+    for a, b in pairs:
+        sa = _standardize(a, stats)
+        sb = _standardize(b, stats)
+        for k in FEATURE_ORDER:
+            out[k].append((sa[k] - sb[k]) ** 2)
+    return out
+
+
+def fit_fisher_weights(
+    pos_pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
+    neg_pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
+    lam: float = 0.3,
+    pos_haiku: Optional[Sequence[float]] = None,
+    neg_haiku: Optional[Sequence[float]] = None,
+) -> Dict[str, object]:
+    """Diagonal-Fisher weights from boundary conditions, shrunk toward uniform.
+
+    POSITIVE pairs (author,author) -> small distance; NEGATIVE pairs
+    (author,field) -> large distance. fisher_i = between_i / max(within_i, FLOOR).
+    """
+    all_vecs = [v for pr in list(pos_pairs) + list(neg_pairs) for v in pr]
+    stats = standardization_stats(all_vecs)
+    within = _sq_diffs_per_feature(pos_pairs, stats)
+    between = _sq_diffs_per_feature(neg_pairs, stats)
+
+    fisher: Dict[str, float] = {}
+    for k in FEATURE_ORDER:
+        w_var = max(_mean(within[k]), WITHIN_VAR_FLOOR)
+        b_var = _mean(between[k])
+        fisher[k] = b_var / w_var
+
+    # w_h fitted from the Haiku sample exactly like any other term.
+    if pos_haiku and neg_haiku:
+        pos_d = [(1.0 - s) ** 2 for s in pos_haiku]
+        neg_d = [(1.0 - s) ** 2 for s in neg_haiku]
+        fisher_h = _mean(neg_d) / max(_mean(pos_d), WITHIN_VAR_FLOOR)
+    else:
+        fisher_h = 0.0
+
+    keys = FEATURE_ORDER + ["_h"]
+    raw = [fisher[k] for k in FEATURE_ORDER] + [fisher_h]
+    n = len(keys)
+    uniform = 1.0 / n
+    shrunk = [max((1.0 - lam) * r + lam * uniform, 0.0) for r in raw]
+    s = sum(shrunk) or 1.0
+    norm = [x / s for x in shrunk]
+
+    weights = {k: norm[i] for i, k in enumerate(FEATURE_ORDER)}
+    w_h = norm[-1]
+    return {"weights": weights, "w_h": w_h, "stats": stats}
