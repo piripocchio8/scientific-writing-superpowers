@@ -1,0 +1,22 @@
+{
+  "id": "https://openalex.org/W1234567890",
+  "doi": "https://doi.org/10.1000/xyz001",
+  "title": "Kinetic analysis of model peptide hydrolysis",
+  "authorships": [
+    {
+      "author": {"id": "https://openalex.org/A1", "display_name": "Jane Smith"},
+      "author_position": "first"
+    }
+  ],
+  "publication_year": 2022,
+  "primary_location": {
+    "source": {"display_name": "Journal of Chemical Research", "type": "journal"},
+    "is_oa": true,
+    "pdf_url": "https://example.com/paper.pdf"
+  },
+  "cited_by_count": 14,
+  "abstract_inverted_index": {
+    "We": [0], "studied": [1], "peptide": [2, 8], "hydrolysis": [3],
+    "kinetics": [5], "using": [6], "stopped-flow": [7], "methods.": [9]
+  }
+}
