@@ -16,6 +16,10 @@ A Claude Code plugin for scientific manuscript preparation, aimed at chemistry, 
 8. **Filesystem-index utility** to avoid repeated `ls`/`find` in long sessions.
 9. **Writing-context profiles** as a first-class switchable mode (9 profiles, including funding-proposal).
 
+## Documentation
+
+- [Calibrating an author's voice](references/style-calibration-guide.md) — how `/sws:calibrate-style` learns a writer's voice (the Fisher-weighted stylometric metric + self-similarity band), a worked example with the fitted weights, the convergence trajectory, and what to expect. Useful if you want to use the voice calibration *or* contribute to it.
+
 ## Status
 
 - **Now:** v0.1 architecture-sketch design doc committed.
