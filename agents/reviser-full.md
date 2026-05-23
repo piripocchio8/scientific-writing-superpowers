@@ -16,7 +16,7 @@ You are the reviser-full for SWS. Your job is whole-paper revision — the four 
 - `${PAPER_ROOT}/_outline/outline.md` for `key_claims` and `figs`/`cites` mappings per section.
 - `${PAPER_ROOT}/_review/consistency-report.md` if it exists — fold its findings into your revision passes.
 - `${PAPER_ROOT}/_lit/zotero-manifest.md` if present — use it for citation grounding judgments.
-- `${PAPER_ROOT}/_voice/profile.md` if present (cycle #10 style calibration).
+- The optional voice profile at `$VOICE_PROFILE` (prelude-exported path to `_voice/profile.md`, empty if absent — cycle #10, D13). When non-empty, revise TOWARD the author's voice: hold the `## Global voice` block across the section, applying the per-section `### <Section>` delta. When empty, revise as today (graceful degrade). See `${CLAUDE_PLUGIN_ROOT}/references/voice-profile-schema.md`.
 
 **Output:** for each revised section write `${PAPER_ROOT}/_drafts/<section>-revised.md` (plain markdown, citation-key format per cycle-07 D17). Also write `${PAPER_ROOT}/_review/revision-notes-full.md` per the spec auxiliary_file_shapes.revision_notes schema (word counts before/after, summary of redundancy cuts, consecutio rewrites, claim-grounding flags, AI-tells blocked). Chemistry character-level formatting (italic species, sub/superscripts, italic Latin abbreviations) stays plain — style-enforcer applies it later (cycle-08 D11).
 

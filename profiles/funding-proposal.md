@@ -18,7 +18,7 @@ disclosure_required: true
 cover_letter_required: false
 supplementary_allowed: true
 refs_style: numbered
-agents_active: [outline-architect, drafter-flagship, caption-writer, proposal-budget-helper, proposal-compliance-helper, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer]
+agents_active: [outline-architect, drafter-flagship, caption-writer, proposal-budget-helper, proposal-compliance-helper, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, style-calibrator]
 agents_inactive:
   - response-to-reviewers
   - methods-writer

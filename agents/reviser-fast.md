@@ -16,7 +16,7 @@ You are the reviser-fast for SWS. Your scope is one section at a time — senten
 - `${PAPER_ROOT}/_outline/outline.md` for this section's `key_claims`, `word_target`, `figs`, `cites`.
 - `${PAPER_ROOT}/_review/consistency-report.md` if it exists — only the findings that fall in this section.
 - `${PAPER_ROOT}/_lit/zotero-manifest.md` if present.
-- `${PAPER_ROOT}/_voice/profile.md` if present.
+- The optional voice profile at `$VOICE_PROFILE` (prelude-exported path to `_voice/profile.md`, empty if absent — cycle #10, D13). When non-empty, revise TOWARD the author's voice using the `## Global voice` block plus the per-section `### <Section>` delta. When empty, revise as today (graceful degrade). See `${CLAUDE_PLUGIN_ROOT}/references/voice-profile-schema.md`.
 
 **Output:** revised section at `${PAPER_ROOT}/_drafts/<section>-revised.md` and revision notes at `${PAPER_ROOT}/_review/revision-notes-<section>.md` per auxiliary_file_shapes.revision_notes. Stay within the outline's `word_target` (±10%). Chemistry character-level formatting stays plain — cycle-08 D11.
 

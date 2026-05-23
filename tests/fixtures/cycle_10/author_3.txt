@@ -1,0 +1,1 @@
+We ran the assay at room temperature. The output was reproducible. We compared two buffers. The faster buffer won. We use it for all later work.

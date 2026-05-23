@@ -1,0 +1,1 @@
+We titrated the ligand stepwise. The shift was monotonic. We fit a single binding model. The residuals were small. We take this as evidence for one site.

@@ -14,7 +14,7 @@ cover_letter_required: false
 supplementary_allowed: false
 refs_style: numbered
 agents_active: []
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast]
+agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast, style-calibrator]
 ---
 
 # Editorial profile (fixture)

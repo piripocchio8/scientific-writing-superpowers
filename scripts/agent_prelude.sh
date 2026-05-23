@@ -104,3 +104,12 @@ if [[ "$RESOLVED_PROFILE_SET" -ne 1 ]]; then
 elif [[ "$RESOLVED_OK" -ne 1 ]]; then
     echo "sws: agent ${AGENT_ID} not active for resolved profile (${RESOLVED_PROFILE_ID})." >&2
 fi
+
+# --- cycle #10: voice profile path (D13) -----------------------------------
+# Export VOICE_PROFILE = path to _voice/profile.md if it exists, else empty.
+# Voice is a SEPARATE axis from resolve_overlay.py; this is just a path export.
+if [[ -f "${PAPER_ROOT}/_voice/profile.md" ]]; then
+    export VOICE_PROFILE="${PAPER_ROOT}/_voice/profile.md"
+else
+    export VOICE_PROFILE=""
+fi
