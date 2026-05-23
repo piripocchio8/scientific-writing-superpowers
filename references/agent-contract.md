@@ -102,3 +102,16 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 | `_review/bibliography-fidelity-checker/report.md` | Markdown report with V0.1 LIMITATION header + findings or skip-reason note (D9, D9a, D9b, D9c) | bibliography-fidelity-checker |
 | `_review/bibliography-fidelity-checker/flags.json` | List of `{paragraph_id, section, overlap_text, zotero_item_key, zotero_title, zotero_authors, zotero_year, zotero_collection, page_hint}` | bibliography-fidelity-checker |
 | `_review/bibliography-fidelity-checker/status.json` | Dict `{zotero_skill_available, zotero_desktop_detected, zotero_sqlite_path, ran, skip_reason, library_item_count?}` | bibliography-fidelity-checker |
+| `scripts/sws_xlsx_resolve.py` | Read .xlsx data_only; fail loud on un-cached formula cells (D4) | 11 |
+| `scripts/sws_data_manifest.py` | Build/update Zenodo_db/manifest.json atomically; orphan check | 11 |
+| `scripts/sws_plot_runner.py` | Inject rcParams font floor, exec user plot script, introspect figure for D6a compliance (font >= 8 pt; width in {7.5 cm or 12–16 cm}); save figure; return JSON result | 11 |
+| `scripts/sws_semantic_scholar.py` | Semantic Scholar search + DOI resolve (cached, backoff) | 11 |
+| `scripts/sws_crossref.py` | CrossRef DOI resolve + reference formatting | 11 |
+| `scripts/sws_openalex.py` | OpenAlex metadata + abstract reconstruction | 11 |
+| `Zenodo_db/data/*.xlsx` | Source data files — read via sws_xlsx_resolve.py only | 11 |
+| `Zenodo_db/scripts/` | Co-located fit/plot scripts — executed by plot-maker | 11 |
+| `Zenodo_db/figures/` | Plot-maker outputs (PNG/PDF/SVG); every file must have a manifest.json entry | 11 |
+| `Zenodo_db/manifest.json` | Provenance spine: dataset → script → figure(s); written atomically | 11 |
+| `refs/_lit-search/<slug>.md` | literature-searcher output — ranked candidates with metadata + relevance note | 11 |
+| `_review/bibliography-audit/report.md` | bibliography-curator audit report — unresolved DOIs, duplicates, format deviations | 11 |
+| `_review/bibliography-audit/fixes.json` | bibliography-curator proposed fixes — list of `{key, field, old, new, source}` | 11 |
