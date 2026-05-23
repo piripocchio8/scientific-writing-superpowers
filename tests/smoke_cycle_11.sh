@@ -159,12 +159,13 @@ echo "fake png" > "$PAPER/Zenodo_db/figures/fig1_sample.png"
     --sheet "Kinetics" \
     --script "scripts/plot_sample.py" \
     --figures "figures/fig1_sample.png" \
-    --journal-style "test-journal"
+    --journal-style "test-journal" \
+    --width-in 2.953 --min-font-pt 9.0
 if [[ -f "$PAPER/Zenodo_db/manifest.json" ]] \
-   && "$PY" -c "import json; d=json.load(open('$PAPER/Zenodo_db/manifest.json')); assert d[0]['dataset']=='data/sample.xlsx'"; then
+   && "$PY" -c "import json; d=json.load(open('$PAPER/Zenodo_db/manifest.json')); assert d[0]['dataset']=='data/sample.xlsx'; assert d[0]['width_in']==2.953; assert d[0]['min_font_pt']==9.0"; then
     ok
 else
-    ko "manifest.json not created or missing entry"
+    ko "manifest.json not created or missing entry / D6a keys"
 fi
 
 # ---------------------------------------------------------------------------

@@ -33,6 +33,8 @@ Zenodo_db/
     "figures": ["figures/fig1_kinetics.png", "figures/fig1_kinetics.pdf"],
     "generated_at": "2026-05-22T14:30:00Z",
     "journal_style": "acs-jacs",
+    "width_in": 2.953,
+    "min_font_pt": 9.0,
     "notes": ""
   }
 ]
@@ -46,6 +48,10 @@ Zenodo_db/
 - `generated_at` — ISO-8601 UTC timestamp of the last successful regeneration
 - `journal_style` — the resolved journal-style overlay id at time of generation (empty string if none resolved)
 - `notes` — free text; empty string if unused
+
+**Optional D6a keys per entry** (written by `plot-maker` from `sws_plot_runner.py` output; omitted for non-figure entries):
+- `width_in` — actual figure width in inches as built and checked against the D6a width bands
+- `min_font_pt` — measured minimum effective font size in pt across the figure's text artists
 
 **Invariant:** `sws_data_manifest.py` writes `manifest.json` atomically (write to `.manifest.json.tmp`, then rename). `plot-maker` always updates `manifest.json` in the same step as writing the figure. Orphaned figures (in `figures/` but no manifest entry) are flagged by `sws_data_manifest.py --check`.
 

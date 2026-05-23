@@ -9,6 +9,7 @@ CLI:
         --script <rel-path>
         --figures <rel-path> [<rel-path> ...]
         --journal-style <id-or-empty>
+        [--width-in <float>] [--min-font-pt <float>]
 
   sws_data_manifest.py <zenodo_db_dir> --check
         (flags figures/ files absent from manifest.json)
@@ -59,6 +60,13 @@ def cmd_add(db: Path, args) -> int:
         "journal_style": args.journal_style or "",
         "notes": "",
     }
+    # D6a figure-readability metrics from sws_plot_runner.py — recorded only when
+    # the plot-maker passes them through; omitted otherwise so non-figure entries
+    # stay clean.
+    if args.width_in is not None:
+        entry["width_in"] = args.width_in
+    if args.min_font_pt is not None:
+        entry["min_font_pt"] = args.min_font_pt
     entries.append(entry)
     _save_manifest_atomic(db, entries)
     print(f"sws_data_manifest: added entry for {args.dataset} -> {args.figures}")
@@ -103,6 +111,10 @@ def main(argv=None) -> int:
     ap.add_argument("--script", help="Relative path to the plot/fit script inside Zenodo_db/")
     ap.add_argument("--figures", nargs="+", help="Relative paths to output figures inside Zenodo_db/")
     ap.add_argument("--journal-style", default="", help="Resolved journal-style overlay id")
+    ap.add_argument("--width-in", type=float, default=None,
+                    help="D6a figure width in inches (from sws_plot_runner.py)")
+    ap.add_argument("--min-font-pt", type=float, default=None,
+                    help="D6a measured minimum font size in pt (from sws_plot_runner.py)")
     args = ap.parse_args(argv)
 
     db = Path(args.zenodo_db)

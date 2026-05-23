@@ -69,6 +69,20 @@ def _collect_text_artists(fig) -> list[Any]:
     return fig.findobj(mtext.Text)
 
 
+def _collect_font_sizes(fig) -> list[float]:
+    """Return the effective font size of every non-empty text artist in the figure."""
+    sizes = []
+    for artist in _collect_text_artists(fig):
+        text_str = artist.get_text()
+        if not text_str.strip():
+            continue  # skip empty artists (e.g. blank tick labels)
+        try:
+            sizes.append(float(artist.get_fontsize()))
+        except Exception:
+            continue
+    return sizes
+
+
 def _check_fonts(fig) -> list[dict]:
     """Return a list of offending elements whose effective font size < _FONT_FLOOR_PT."""
     offending = []
@@ -179,35 +193,31 @@ def run(
         }
 
     # ---- 7. Font floor check -----------------------------------------------
+    # Measure every text artist's size BEFORE the figure is closed so the
+    # reported min_font_pt reflects the actual minimum, not the injected target.
     offending = _check_fonts(fig)
+    all_sizes = _collect_font_sizes(fig)
+    measured_min_font = float(min(all_sizes)) if all_sizes else None
     plt.close("all")
 
     if offending:
-        sizes = [e["font_size"] for e in offending]
-        min_font = float(min(sizes))
         return {
             "pass": False,
             "width_in": float(actual_width_in),
-            "min_font_pt": min_font,
+            "min_font_pt": measured_min_font,
             "offending_elements": offending,
             "error": (
                 f"{len(offending)} text artist(s) below {_FONT_FLOOR_PT} pt floor "
-                f"(minimum found: {min_font:.1f} pt) — D6a"
+                f"(minimum found: {measured_min_font:.1f} pt) — D6a"
             ),
             "figure_path": str(fig_path),
         }
 
     # ---- 8. All checks passed ----------------------------------------------
-    all_text = _collect_text_artists(fig) if False else []  # fig already closed; reuse offending=[]
-    # Re-open to collect sizes for min_font recording (we need the figure object)
-    # Since we closed above we compute min_font from the saved figure stats:
-    # we already know offending is empty so min_font >= 8; record the injected floor as lower bound.
-    min_font_recorded = _FONT_TARGET_PT  # conservative: target was injected
-
     return {
         "pass": True,
         "width_in": float(actual_width_in),
-        "min_font_pt": min_font_recorded,
+        "min_font_pt": measured_min_font,
         "offending_elements": [],
         "error": "",
         "figure_path": str(fig_path),

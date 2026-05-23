@@ -66,6 +66,40 @@ def test_add_creates_manifest_json(tmp_path):
     assert entry["journal_style"] == "acs-jacs"
 
 
+def test_add_records_width_in_and_min_font_pt_when_provided(tmp_path):
+    """D6a: --width-in / --min-font-pt round-trip into the manifest entry."""
+    db = _make_zenodo_db(tmp_path)
+    _run([
+        str(db), "--add",
+        "--dataset", "data/measurements.xlsx",
+        "--sheet", "Kinetics",
+        "--script", "scripts/plot_kinetics.py",
+        "--figures", "figures/fig1.png",
+        "--journal-style", "acs-jacs",
+        "--width-in", "2.953",
+        "--min-font-pt", "9.0",
+    ])
+    entry = json.loads((db / "manifest.json").read_text())[0]
+    assert entry["width_in"] == 2.953
+    assert entry["min_font_pt"] == 9.0
+
+
+def test_add_omits_width_in_and_min_font_pt_when_not_provided(tmp_path):
+    """Non-figure / metric-less entries must not carry empty D6a keys."""
+    db = _make_zenodo_db(tmp_path)
+    _run([
+        str(db), "--add",
+        "--dataset", "data/measurements.xlsx",
+        "--sheet", "Kinetics",
+        "--script", "scripts/plot_kinetics.py",
+        "--figures", "figures/fig1.png",
+        "--journal-style", "acs-jacs",
+    ])
+    entry = json.loads((db / "manifest.json").read_text())[0]
+    assert "width_in" not in entry
+    assert "min_font_pt" not in entry
+
+
 def test_add_second_entry_appends_not_overwrites(tmp_path):
     db = _make_zenodo_db(tmp_path)
     (db / "figures" / "fig2.png").write_text("fake png2", encoding="utf-8")

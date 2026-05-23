@@ -49,9 +49,19 @@ Every figure must satisfy both conditions or the run fails with an actionable re
       prints a JSON result to stdout.
    c. Parse the JSON result. If `"pass": false`, report the `error` and `offending_elements`
       to the user and STOP — do not update the manifest with a non-compliant figure.
-   d. On `"pass": true`, update `manifest.json` via `sws_data_manifest.py --add ...` with
-      the current timestamp, the `width_in` and `min_font_pt` values from the result, and
-      the `figure_path` reported by the runner.
+   d. On `"pass": true`, update `manifest.json` via `sws_data_manifest.py --add`, passing
+      the runner's `width_in` and `min_font_pt` (both emitted in the JSON result) through
+      the matching flags, plus the `figure_path` reported by the runner:
+      ```
+      ${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPER_ROOT" \
+          ${CLAUDE_PLUGIN_ROOT}/scripts/sws_data_manifest.py \
+          "${PAPER_ROOT}/Zenodo_db" --add \
+          --dataset <dataset_rel> --sheet <sheet> \
+          --script <script_rel> --figures <figure_rel> \
+          --journal-style "$RESOLVED_REFS_STYLE" \
+          --width-in <width_in> --min-font-pt <min_font_pt>
+      ```
+      The timestamp (`generated_at`) is written automatically by `sws_data_manifest.py`.
 3. If `--verify` was passed: use the native multimodal Read tool to read each PNG.
    Self-check: axis labels present, no overlapping elements, legend correct if present,
    data appears consistent with the manifest dataset. Report findings. The D6a numeric
