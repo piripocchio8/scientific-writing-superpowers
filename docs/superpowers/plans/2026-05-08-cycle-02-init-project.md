@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python ≥ 3.9 stdlib (no external deps), `string.Template`, `pathlib`, `json`, `argparse`, `unittest`, `unittest.mock`. Bash for skill orchestration. Markdown + YAML frontmatter for templates and references.
 
-**Working directory:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`.
+**Working directory:** `$REPO_ROOT/`.
 
 **Branch:** `cycle/02-init-project` (matches cycle #1's in-place feature-branch pattern; no worktree).
 
@@ -21,7 +21,7 @@
 - Lean-deliverable rule: `claude_memory/feedback_lean_deliverables.md`
 - Python env reference: `claude_memory/feedback_python_env.md`
 
-**Reference Python interpreter for local testing:** `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python` (per CLAUDE.md). Skills invoke generic `python3` at runtime; tests run with the pymol25 path locally.
+**Reference Python interpreter for local testing:** `$DEV_PY` (per CLAUDE.md). Skills invoke generic `python3` at runtime; tests run with the dev-env path locally.
 
 ---
 
@@ -30,7 +30,7 @@
 - [ ] **Step 1: Verify clean working tree.**
 
 ```bash
-git -C /Users/piripocchio8/Projects/scientific-writing-superpowers status -s
+git -C $REPO_ROOT status -s
 ```
 Expected: empty (no uncommitted changes). Two commits already on local main ahead of origin (`8e4378e` rename + `336d400` cycle-#2 spec) are fine to carry into the branch.
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run test to confirm import-failure.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_python_env -v
+$DEV_PY -m unittest tests.test_python_env -v
 ```
 Expected: `ModuleNotFoundError: No module named 'sws_check_env'`.
 
@@ -152,14 +152,14 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run test to confirm pass.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_python_env -v
+$DEV_PY -m unittest tests.test_python_env -v
 ```
 Expected: 4 tests pass.
 
 - [ ] **Step 5: Smoke-test the CLI.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python scripts/sws_check_env.py && echo OK
+$DEV_PY scripts/sws_check_env.py && echo OK
 ```
 Expected: `OK`.
 
@@ -194,12 +194,12 @@ sws_artifact: python-env
 artifact_version: 0.1
 locked: 2026-05-08
 sources:
-  - claude_memory/feedback_python_env.md (user's preferred local env: pymol25 mamba)
+  - claude_memory/feedback_python_env.md (user's preferred local env: dev mamba env)
   - docs/superpowers/specs/2026-05-08-cycle-02-init-project-design.md (python_env_policy)
 
 policy:
   min_python: "3.9"
-  reference_local_env_for_dev: pymol25 (mamba) at /Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python
+  reference_local_env_for_dev: dev mamba env at $DEV_PY
   shipped_runtime_invocation: python3 (whatever's on PATH that meets min_python)
   deps_state_v0_1_through_cycle_4: stdlib-only
   first_real_dep_cycle: 5  # likely python-docx for OOXML manipulation
@@ -220,7 +220,7 @@ stdlib_modules_used_through_cycle_4:
 testing:
   framework: unittest (Python stdlib)
   test_runner: "python -m unittest <module> -v"
-  reference_env_for_local_test_runs: pymol25 (per claude_memory/feedback_python_env.md)
+  reference_env_for_local_test_runs: the dev env (per claude_memory/feedback_python_env.md)
   mocking: unittest.mock
 ---
 
@@ -236,7 +236,7 @@ Skills invoke Python utilities through `scripts/sws_check_env.py` first. The che
 - [ ] **Step 2: Verify the YAML parses.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -c "
+$DEV_PY -c "
 import re, yaml
 fm = yaml.safe_load(re.search(r'^---\n(.*?)\n---', open('references/python-env.md').read(), re.S|re.M).group(1))
 assert fm['sws_artifact'] == 'python-env'
@@ -357,7 +357,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run test to confirm import-failure.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_render_template -v
+$DEV_PY -m unittest tests.test_render_template -v
 ```
 Expected: `ModuleNotFoundError: No module named 'sws_render_template'`.
 
@@ -415,7 +415,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run tests to confirm pass.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_render_template -v
+$DEV_PY -m unittest tests.test_render_template -v
 ```
 Expected: 6 tests pass.
 
@@ -531,7 +531,7 @@ EOF
 
 for tpl in templates/sws-project-marker.template templates/manuscript-claude-md.template templates/manuscript-memory-md.template; do
   out="/tmp/sws_tpl_smoke/$(basename $tpl .template).rendered.md"
-  /Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python scripts/sws_render_template.py \
+  $DEV_PY scripts/sws_render_template.py \
     --template "$tpl" --vars-file /tmp/sws_tpl_smoke/vars.json --out "$out" \
     && echo "rendered $tpl"
 done
@@ -643,7 +643,7 @@ Custom named styles only. Word's built-in `Heading 1` / `Heading 2` / `Title` / 
 - [ ] **Step 2: Verify YAML parses.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -c "
+$DEV_PY -c "
 import re, yaml
 fm = yaml.safe_load(re.search(r'^---\n(.*?)\n---', open('references/docx-style.md').read(), re.S|re.M).group(1))
 assert fm['sws_artifact'] == 'docx-style'
@@ -739,7 +739,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run test to confirm import-failure.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v
+$DEV_PY -m unittest tests.test_init_project -v
 ```
 Expected: `ModuleNotFoundError: No module named 'sws_init_project'`.
 
@@ -790,7 +790,7 @@ def slugify(name: str) -> str:
 - [ ] **Step 4: Run tests to confirm pass.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v
+$DEV_PY -m unittest tests.test_init_project -v
 ```
 Expected: 7 tests pass.
 
@@ -921,7 +921,7 @@ class TestValidateInputs(unittest.TestCase):
 - [ ] **Step 2: Run tests to confirm 10 new failures (AttributeError on `validate_inputs`).**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v 2>&1 | tail -20
+$DEV_PY -m unittest tests.test_init_project -v 2>&1 | tail -20
 ```
 Expected: 10 errors with `AttributeError: module 'sws_init_project' has no attribute 'validate_inputs'`.
 
@@ -994,7 +994,7 @@ def validate_inputs(inputs: dict) -> tuple[bool, str]:
 - [ ] **Step 4: Run all tests to confirm pass.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v
+$DEV_PY -m unittest tests.test_init_project -v
 ```
 Expected: 17 tests pass (7 slugify + 10 validate_inputs).
 
@@ -1103,7 +1103,7 @@ class TestScanConflicts(unittest.TestCase):
 - [ ] **Step 2: Run tests to confirm new failures.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v 2>&1 | tail -10
+$DEV_PY -m unittest tests.test_init_project -v 2>&1 | tail -10
 ```
 Expected: 10 errors with `AttributeError: module 'sws_init_project' has no attribute 'scan_conflicts'`.
 
@@ -1206,7 +1206,7 @@ def scan_conflicts(root) -> list[Conflict]:
 - [ ] **Step 4: Run tests.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v
+$DEV_PY -m unittest tests.test_init_project -v
 ```
 Expected: 27 tests pass (7 + 10 + 10).
 
@@ -1349,7 +1349,7 @@ class TestBuildPlan(unittest.TestCase):
 - [ ] **Step 2: Run tests to confirm 8 new failures.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v 2>&1 | tail -10
+$DEV_PY -m unittest tests.test_init_project -v 2>&1 | tail -10
 ```
 Expected: errors on `build_plan` and `Op` not defined.
 
@@ -1494,7 +1494,7 @@ def _claude_md_vars(inputs: dict) -> dict:
 - [ ] **Step 4: Run tests.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v
+$DEV_PY -m unittest tests.test_init_project -v
 ```
 Expected: 35 tests pass (7 + 10 + 10 + 8).
 
@@ -1633,7 +1633,7 @@ class TestApplyPlan(unittest.TestCase):
 - [ ] **Step 2: Run tests to confirm new failures.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v 2>&1 | tail -10
+$DEV_PY -m unittest tests.test_init_project -v 2>&1 | tail -10
 ```
 Expected: 6 errors with `AttributeError: module 'sws_init_project' has no attribute 'apply_plan'`.
 
@@ -1839,7 +1839,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run tests.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project -v
+$DEV_PY -m unittest tests.test_init_project -v
 ```
 Expected: 41 tests pass (7 + 10 + 10 + 8 + 6).
 
@@ -1847,8 +1847,8 @@ Expected: 41 tests pass (7 + 10 + 10 + 8 + 6).
 
 ```bash
 mkdir -p /tmp/sws_smoke && cd /tmp/sws_smoke && touch paper.docx
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_init_project.py scan --root /tmp/sws_smoke
-cd /Users/piripocchio8/Projects/scientific-writing-superpowers
+$DEV_PY $REPO_ROOT/scripts/sws_init_project.py scan --root /tmp/sws_smoke
+cd $REPO_ROOT
 rm -rf /tmp/sws_smoke
 ```
 Expected: JSON list with one C1 conflict for `paper.docx`.
@@ -2063,7 +2063,7 @@ The 10 edge cases are enumerated in the spec's `edge_cases` frontmatter (E1 unsa
 - [ ] **Step 2: Verify the SKILL.md frontmatter parses.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -c "
+$DEV_PY -c "
 import re, yaml
 fm = yaml.safe_load(re.search(r'^---\n(.*?)\n---', open('skills/init-project/SKILL.md').read(), re.S|re.M).group(1))
 assert fm['name'] == 'init-project'
@@ -2105,7 +2105,7 @@ The orchestration is model-driven, so end-to-end behavior is tested by exercisin
 - [ ] **Step 1: Run all unit tests one final time.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -8
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -8
 ```
 Expected: 4 (cycle #1 fs_index) + 41 (cycle #2 init-project + render + env) = **45 tests pass**.
 
@@ -2118,8 +2118,8 @@ mkdir -p claude_material
 echo "# notes" > CLAUDE.md
 
 # scan
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python \
-  /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_init_project.py \
+$DEV_PY \
+  $REPO_ROOT/scripts/sws_init_project.py \
   scan --root /tmp/sws_e2e > /tmp/sws_e2e_conflicts.json
 cat /tmp/sws_e2e_conflicts.json
 
@@ -2144,19 +2144,19 @@ cat > /tmp/sws_e2e_resolutions.json <<'EOF'
 {"C1": "accept", "C3": "accept", "C4": "skip"}
 EOF
 
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python \
-  /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_init_project.py \
+$DEV_PY \
+  $REPO_ROOT/scripts/sws_init_project.py \
   plan --inputs /tmp/sws_e2e_inputs.json \
        --conflicts /tmp/sws_e2e_conflicts.json \
        --resolutions /tmp/sws_e2e_resolutions.json > /tmp/sws_e2e_plan.json
 cat /tmp/sws_e2e_plan.json | head -40
 
 # apply
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python \
-  /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_init_project.py \
+$DEV_PY \
+  $REPO_ROOT/scripts/sws_init_project.py \
   apply --plan /tmp/sws_e2e_plan.json \
         --root /tmp/sws_e2e \
-        --plugin-root /Users/piripocchio8/Projects/scientific-writing-superpowers
+        --plugin-root $REPO_ROOT
 
 # verify
 ls -la /tmp/sws_e2e
@@ -2164,7 +2164,7 @@ cat /tmp/sws_e2e/.sws-project.local.md
 cat /tmp/sws_e2e/CLAUDE.md | head -20
 
 # clean up
-cd /Users/piripocchio8/Projects/scientific-writing-superpowers
+cd $REPO_ROOT
 rm -rf /tmp/sws_e2e /tmp/sws_e2e_*.json
 ```
 
@@ -2231,7 +2231,7 @@ Plan: `docs/superpowers/plans/2026-05-08-cycle-02-init-project.md`.
 
 ## Test plan
 
-- [x] 45/45 unit tests pass under pymol25 (`python -m unittest discover tests -v`).
+- [x] 45/45 unit tests pass under the dev env (`python -m unittest discover tests -v`).
 - [x] Manual end-to-end smoke test against `/tmp/sws_e2e` fixture (3 conflicts → resolved → applied → verified).
 - [ ] Plugin loads in Claude Code without error post-merge.
 - [ ] `/sws:init-project` invokable from a fresh Claude Code session post-merge against a real test directory.

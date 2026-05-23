@@ -389,7 +389,7 @@ execution:
   approach: "Same dispatch flow as cycles #7 and #8: user approves spec → planner skill writes implementation plan → subagent-driven execution → PR opened, user merges."
   parallelism: "Tasks within phases parallelizable per feedback_subagent_dispatch.md. Phases sequential (refs → scripts → agents → skills → profiles → router → tests → smoke → banner)."
   expected_pr_size: "Larger than cycle #8 (~25–35 commits, ~3000–4500 LoC added). 3 agents + 4 skills + 2 scripts + rubric + 9 profile updates + ~40 tests + smoke + banner."
-  beta_test_phase: "Optional phase-2.5 against the Procentese perspective fixture (cycle #7 phase-2 sandbox) — run /sws:review-paper end-to-end on the existing fixture. User-approved before phase-3 implementation completion."
+  beta_test_phase: "Optional phase-2.5 against the the beta-test perspective fixture (cycle #7 phase-2 sandbox) — run /sws:review-paper end-to-end on the existing fixture. User-approved before phase-3 implementation completion."
 ---
 
 # Cycle #9 — Review

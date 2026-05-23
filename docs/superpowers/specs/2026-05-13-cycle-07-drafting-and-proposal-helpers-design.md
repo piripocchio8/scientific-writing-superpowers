@@ -158,18 +158,18 @@ locked_decisions:
     choice: "Unit tests cover deterministic scaffolding (prelude sourcing, profile resolution, format branching, should_run check, citation-key parsing, manifest export). Structural assertion tests on agent outputs: file exists, word-count under budget, AI-tells grep-pass = zero high-severity, citation keys parse. Integration smoke = tests/smoke_cycle_07.sh on tests/fixtures/cycle_07_paper/. No golden snapshot diffs (too brittle for LLM prose). (Q10=B)"
 
   D20_beta_integration_perspective_intro_paragraph:
-    choice: "Cycle-#7 phase-2 mid-cycle gate = beta-test against the Procentese et al. 2026 ChemBioChem perspective intro. Real manuscript file is read READ-ONLY via Claude's built-in DOCX skill. Sandbox lives at this plugin repo's _perspective_beta/ (gitignored alongside claude_memory/), NOT in the actual paper folder. (Q11=B)"
-    target_manuscript: "/Users/piripocchio8/Library/CloudStorage/OneDrive-SharedLibraries-UniversitàdiNapoliFedericoII/Cyclic Peptides - General/Procentese et al_2026_Perspective_ChemBioChem/Manuscript/Procentese et al_2026_ChemBioChem_20260513.docx"
-    test_focus: "Subsection 1 of current intro lacks reference to Semaglutide-driven revival of peptide-based therapeutics. Drafter-flagship is prompted with this gap; output compared side-by-side to original."
+    choice: "Cycle-#7 phase-2 mid-cycle gate = beta-test against a real in-progress perspective manuscript's introduction. The manuscript file is read READ-ONLY via Claude's built-in DOCX skill. Sandbox lives at this plugin repo's _perspective_beta/ (gitignored alongside claude_memory/), NOT in the actual paper folder. (Q11=B)"
+    target_manuscript: "$TARGET_MANUSCRIPT"   # local path, kept out of version control; never commit a real path
+    test_focus: "A subsection of the current intro is missing a relevant framing reference. Drafter-flagship is prompted with this gap; output compared side-by-side to the original."
     safety: "Manuscript file MUST NOT be written to. DOCX skill opens read-only. Sandbox sits inside this plugin repo so beta artifacts never pollute the actual paper directory."
 
   D21_phasing_internal_to_one_PR:
-    choice: "Cycle #7 ships as one PR with four internal phases (Q11=C/build-strategy=C). Phase 1: scaffolding + outline-architect + drafter-flagship + minimal skills. Phase 2: beta-test gate against Procentese perspective. Phase 3: remaining 5 agents (parallel subagent dispatch) + orchestrator mode + remaining skills. Phase 4: end-to-end smoke."
+    choice: "Cycle #7 ships as one PR with four internal phases (Q11=C/build-strategy=C). Phase 1: scaffolding + outline-architect + drafter-flagship + minimal skills. Phase 2: beta-test gate against the beta-test perspective. Phase 3: remaining 5 agents (parallel subagent dispatch) + orchestrator mode + remaining skills. Phase 4: end-to-end smoke."
     rationale: "Captures vertical-slice beta-value-early without splitting the roadmap. Mid-cycle smoke catches scaffolding flaws before they propagate to 4 more agents."
 
   D22_io_wrapper_layer:
     choice: "Cycle #7 ships scripts/sws_read_docx.py + scripts/sws_read_xlsx.py wrappers (python-docx + openpyxl-based) because native Read tool fails on DOCX/XLSX. R3 in references/agent-contract.md updated to reflect: native Read for PDF + images; SWS wrappers for DOCX + XLSX. WRITE wrappers deferred to cycle #8 (reviser + style-enforcer needs)."
-    rationale: "Discovered during phase-2 beta-test on the Procentese perspective .docx. Contract was honest-broken — agents would either fail on the binary or silently fall back to ad-hoc python-docx installs. Ship the wrappers + fix the contract in the same PR so phase-3 agent prompts can reference them correctly from day one."
+    rationale: "Discovered during phase-2 beta-test on the the beta-test perspective .docx. Contract was honest-broken — agents would either fail on the binary or silently fall back to ad-hoc python-docx installs. Ship the wrappers + fix the contract in the same PR so phase-3 agent prompts can reference them correctly from day one."
 
 cross_cutting_agent_contract:
   description: "Content for references/agent-contract.md. Linked from every cycle-#7 agent file. Future agents (cycles #8–#11) inherit the same rules."
@@ -373,7 +373,7 @@ phasing:
       - tests/test_zotero_manifest_export.py
 
   phase_2_beta_gate:
-    description: "Mid-cycle beta-test against Procentese et al. perspective intro (D20). User reviews. Proceed only on acceptable result."
+    description: "Mid-cycle beta-test against the beta-test perspective intro (D20). User reviews. Proceed only on acceptable result."
     artifacts:
       - _perspective_beta/source-snapshot.md
       - _perspective_beta/outline.md
@@ -467,7 +467,7 @@ risks:
     mitigation: "Compliance helper reads the overlay (already digested) FIRST; only opens the PDF for specific ambiguity resolution (passes a targeted question + relevant page range). Falls back to user-supplied excerpt if PDF skill fails."
 
   R6_beta_test_manuscript_accidental_write:
-    risk: "Misconfigured agent or skill writes to the actual Procentese manuscript file."
+    risk: "Misconfigured agent or skill writes to the actual beta-test manuscript file."
     mitigation: "Beta sandbox lives at THIS plugin repo's _perspective_beta/, not in the user paper folder. DOCX skill is opened in read-only mode. Tests for the beta path assert no writes outside _perspective_beta/."
 
 ---

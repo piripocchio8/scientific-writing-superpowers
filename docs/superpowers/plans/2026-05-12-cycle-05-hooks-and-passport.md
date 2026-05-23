@@ -8,7 +8,7 @@
 
 **Tech stack:** Python 3.9+ stdlib only. No pyyaml.
 
-**Working directory:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`.
+**Working directory:** `$REPO_ROOT/`.
 
 **Branch:** `cycle/05-hooks-and-passport`.
 
@@ -17,7 +17,7 @@
 - Architecture sketch §5: `docs/superpowers/specs/2026-05-08-architecture-sketch-design.md`
 - Test style: `tests/test_init_project.py`
 
-**Reference Python interpreter:** `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python`
+**Reference Python interpreter:** `$DEV_PY`
 
 ---
 
@@ -42,7 +42,7 @@ class TestParseMarker(unittest.TestCase):
 - [ ] **Step 2: Run tests — expect 6 failures.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymul25/bin/python -m unittest tests.test_sws_hook_utils -v
+$DEV_PY -m unittest tests.test_sws_hook_utils -v
 ```
 
 - [ ] **Step 3: Write `scripts/sws_hook_utils.py`.**
@@ -52,7 +52,7 @@ class TestParseMarker(unittest.TestCase):
 - [ ] **Step 5: Run full suite — expect 82 total.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -5
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -5
 ```
 
 - [ ] **Step 6: Commit.**
@@ -177,7 +177,7 @@ The `$CLAUDE_PLUGIN_ROOT` env var is available in all command hooks for portable
 - [ ] **Step 2: Verify the JSON parses and lists 3 hooks.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -c "
+$DEV_PY -c "
 import json
 data = json.load(open('hooks/hooks.json'))
 h = data['hooks']
@@ -200,7 +200,7 @@ feat(hooks): wire hook config in hooks/hooks.json
 - [ ] **Step 1: Run full unit test suite.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -5
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -5
 ```
 
 Expected: `Ran 101 tests in Xs` with `OK`.
@@ -220,8 +220,8 @@ Full smoke procedure is in the cycle-05 implementation prompt.
 ```bash
 mkdir -p /tmp/sws_c5_outside && cd /tmp/sws_c5_outside
 echo '{"tool_name": "Edit", "tool_input": {"file_path": "/tmp/sws_c5_outside/whatever.docx"}}' | \
-  /Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python \
-  /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_hook_pre_edit_backup.py
+  $DEV_PY \
+  $REPO_ROOT/scripts/sws_hook_pre_edit_backup.py
 # expect: exit 0, no output, no backup
 ```
 

@@ -5,7 +5,7 @@
 **Status:** Architecture sketch (Pass 1 of 2). Implementation = Pass 2, decomposed into 11 sub-projects (see §7).
 **License:** MIT
 **Public repo:** `github.com/piripocchio8/scientific-writing-superpowers`
-**Local plugin-dev path:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`
+**Local plugin-dev path:** `$REPO_ROOT/`
 
 ---
 
@@ -85,7 +85,7 @@ When designing any agent, default behavior is one of these patterns. Deviation n
 
 ## §2 Two layouts: plugin repo + bootstrapped manuscript project
 
-### Plugin repo layout (this folder, `/Users/piripocchio8/Projects/scientific-writing-superpowers/`)
+### Plugin repo layout (this folder, `$REPO_ROOT/`)
 
 ```
 scientific-writing-superpowers/
@@ -536,7 +536,7 @@ None at design-doc time. New questions arising during sub-project planning will 
 - **Brainstorming protocol applies to every sub-project.** Each Pass-2 sub-project follows `superpowers:brainstorming` (one question at a time, propose 2–3 approaches, present design in sections, get approval, write spec doc, hand off to `superpowers:writing-plans`).
 - **Don't invent agent names.** The 24-agent roster is locked. Don't add or remove without explicit user approval.
 - **AI-writing-tells avoidance.** Don't use em-dash overuse, hyphenation chains, "delve/leverage", triplets, "Not just X but Y" in any prose generated for SWS docs or in agent output. See `claude_memory/feedback_ai_writing_tells.md`.
-- **Python env.** `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python` (the `pymol25` mamba env). Don't use system `python3`.
+- **Python env.** `$DEV_PY` (the dev mamba env). Don't use system `python3`.
 - **MCP-aversion principle.** Prefer CLI/Bash when alternative exists. PubMed is the only v0.1 MCP exception.
 - **Marker-scoping for hooks.** Every hook checks `<cwd>/.sws-project.local.md` first; absent marker = silent no-op.
 

@@ -4,11 +4,11 @@
 
 **Goal:** Land the foundation that every subsequent SWS cycle depends on — plugin manifest, canonical directory tree, two reference docs (folder-topology and marker-schema), the recycled superpowers trio (`brainstormer`, `planner`, `code-reviewer`), the filesystem-index utility, and the four community-surface files (CONTRIBUTING, CODE_OF_CONDUCT, three issue templates). Banner stays `🚧 v0.1 in design`.
 
-**Architecture:** SWS is a Claude Code plugin published from `/Users/piripocchio8/Projects/scientific-writing-superpowers/` with the manifest at `.claude-plugin/plugin.json`, components auto-discovered from `agents/`, `skills/`, `commands/`, `hooks/`, and `.mcp.json`. Cycle #1 ships only the manifest, the recycled trio, the filesystem-index utility, the reference docs, and the community surface — no SWS-original agents, skills, hooks, slash commands, or templates yet. Those land in cycles #2 onward per the locked 11-cycle roadmap.
+**Architecture:** SWS is a Claude Code plugin published from `$REPO_ROOT/` with the manifest at `.claude-plugin/plugin.json`, components auto-discovered from `agents/`, `skills/`, `commands/`, `hooks/`, and `.mcp.json`. Cycle #1 ships only the manifest, the recycled trio, the filesystem-index utility, the reference docs, and the community surface — no SWS-original agents, skills, hooks, slash commands, or templates yet. Those land in cycles #2 onward per the locked 11-cycle roadmap.
 
-**Tech Stack:** Markdown + YAML frontmatter for skills/agents; JSON for plugin manifest and filesystem-index output; Python 3.9 (pymol25 mamba env at `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python`) for the filesystem-index utility (stdlib only); Bash for git operations; `gh` CLI for the optional PR step.
+**Tech Stack:** Markdown + YAML frontmatter for skills/agents; JSON for plugin manifest and filesystem-index output; Python 3.9 (dev mamba env at `$DEV_PY`) for the filesystem-index utility (stdlib only); Bash for git operations; `gh` CLI for the optional PR step.
 
-**Working directory throughout:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`.
+**Working directory throughout:** `$REPO_ROOT/`.
 
 **Branch strategy:** feature branch `cycle/01-foundation` (decided in `claude_memory/project_brainstorm_progress.md` — solo work + small cycle-#1 scope makes a worktree overkill). Cycle ends with merge or PR-then-merge to `main` and a banner-unchanged push.
 
@@ -17,9 +17,9 @@
 - Architecture-sketch design: `docs/superpowers/specs/2026-05-08-architecture-sketch-design.md`
 - Roster + profiles + v0.2 backlog: `claude_memory/project_roster_v0.1.md`, `project_profiles.md`, `project_v02_backlog.md`
 - Upstream recycled-trio sources (read-only — these are what we copy from):
-  - `/Users/piripocchio8/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/SKILL.md`
-  - `/Users/piripocchio8/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/writing-plans/SKILL.md`
-  - `/Users/piripocchio8/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/agents/code-reviewer.md`
+  - `$SUPERPOWERS_CACHE/skills/brainstorming/SKILL.md`
+  - `$SUPERPOWERS_CACHE/skills/writing-plans/SKILL.md`
+  - `$SUPERPOWERS_CACHE/agents/code-reviewer.md`
 
 **Recycled-trio mechanism (locked from research):** mechanism (b) — copy upstream file, append `# Adapted from superpowers (MIT)` attribution comment above the YAML frontmatter, rename via the `name:` frontmatter field. Reasoning: neither `plugin-dev:skill-development` nor `plugin-dev:agent-development` documents a manifest-level re-export or alias system; auto-discovery is purely filesystem-based; copy-with-attribution is the only mechanism consistent with the documented loader. MIT-on-MIT compatibility verified.
 
@@ -38,7 +38,7 @@ Before Task 1.
 - [ ] **Verify clean working tree.**
 
 ```bash
-git -C /Users/piripocchio8/Projects/scientific-writing-superpowers status -s
+git -C $REPO_ROOT status -s
 ```
 
 Expected: empty output (no uncommitted changes).
@@ -46,7 +46,7 @@ Expected: empty output (no uncommitted changes).
 - [ ] **Create and switch to the feature branch.**
 
 ```bash
-git -C /Users/piripocchio8/Projects/scientific-writing-superpowers checkout -b cycle/01-foundation
+git -C $REPO_ROOT checkout -b cycle/01-foundation
 ```
 
 Expected: `Switched to a new branch 'cycle/01-foundation'`.
@@ -54,7 +54,7 @@ Expected: `Switched to a new branch 'cycle/01-foundation'`.
 - [ ] **Confirm branch.**
 
 ```bash
-git -C /Users/piripocchio8/Projects/scientific-writing-superpowers branch --show-current
+git -C $REPO_ROOT branch --show-current
 ```
 
 Expected: `cycle/01-foundation`.
@@ -388,7 +388,7 @@ Mechanism: copy upstream file, prepend `# Adapted from superpowers (MIT)` attrib
 
 ```bash
 mkdir -p skills/brainstormer
-cp /Users/piripocchio8/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/SKILL.md skills/brainstormer/SKILL.md
+cp $SUPERPOWERS_CACHE/skills/brainstorming/SKILL.md skills/brainstormer/SKILL.md
 ```
 
 - [ ] **Step 2: Verify the copy is intact.**
@@ -424,7 +424,7 @@ print('OK', fm['name'])
 "
 ```
 
-Expected: `OK brainstormer`. (If `pyyaml` is missing in the active env, install it: `pip install pyyaml`. The pymol25 env should already have it; fall back to manual `head -10` inspection if not.)
+Expected: `OK brainstormer`. (If `pyyaml` is missing in the active env, install it: `pip install pyyaml`. The dev env should already have it; fall back to manual `head -10` inspection if not.)
 
 **Sub-task 4b — `skills/planner/SKILL.md`**
 
@@ -432,7 +432,7 @@ Expected: `OK brainstormer`. (If `pyyaml` is missing in the active env, install 
 
 ```bash
 mkdir -p skills/planner
-cp /Users/piripocchio8/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/writing-plans/SKILL.md skills/planner/SKILL.md
+cp $SUPERPOWERS_CACHE/skills/writing-plans/SKILL.md skills/planner/SKILL.md
 ```
 
 - [ ] **Step 2: Prepend attribution + rename.**
@@ -461,7 +461,7 @@ Expected: `OK planner`.
 - [ ] **Step 1: Copy.**
 
 ```bash
-cp /Users/piripocchio8/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/agents/code-reviewer.md agents/code-reviewer.md
+cp $SUPERPOWERS_CACHE/agents/code-reviewer.md agents/code-reviewer.md
 ```
 
 - [ ] **Step 2: Read upstream frontmatter to capture exact field values.**
@@ -529,7 +529,7 @@ EOF
 
 ## Task 5 — Filesystem-index utility (TDD)
 
-Pure-stdlib Python utility that walks a project tree and writes a JSON manifest of file metadata (path, size, mtime, ext) so later tool calls read the manifest instead of repeatedly running `ls`/`find`. Designed for the pymol25 env (Python 3.9+).
+Pure-stdlib Python utility that walks a project tree and writes a JSON manifest of file metadata (path, size, mtime, ext) so later tool calls read the manifest instead of repeatedly running `ls`/`find`. Designed for the dev env (Python 3.9+).
 
 **Files:**
 - Create: `tests/__init__.py` (empty file so pytest discovers `tests/`)
@@ -548,7 +548,7 @@ touch tests/__init__.py
 `tests/test_fs_index.py`:
 
 ```python
-"""Tests for sws_fs_index.py — pure stdlib + unittest, runs under pymol25."""
+"""Tests for sws_fs_index.py — pure stdlib + unittest, runs under the dev env."""
 import json
 import sys
 import tempfile
@@ -631,7 +631,7 @@ if __name__ == "__main__":
 - [ ] **Step 3: Run the test to confirm it fails (no implementation yet).**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_fs_index -v
+$DEV_PY -m unittest tests.test_fs_index -v
 ```
 
 Expected: `ModuleNotFoundError: No module named 'sws_fs_index'` or equivalent import failure. **Do not proceed until you see this.**
@@ -646,7 +646,7 @@ Expected: `ModuleNotFoundError: No module named 'sws_fs_index'` or equivalent im
 
 Walk a project directory, write a JSON manifest of file metadata so later
 tool calls read the manifest instead of repeatedly running ls/find.
-Designed for the pymol25 mamba env (Python 3.9+, stdlib only).
+Designed for the dev mamba env (Python 3.9+, stdlib only).
 
 Usage:
     python sws_fs_index.py [--root <dir>] [--out <path>]
@@ -739,7 +739,7 @@ if __name__ == "__main__":
 - [ ] **Step 5: Run the test to confirm it passes.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_fs_index -v
+$DEV_PY -m unittest tests.test_fs_index -v
 ```
 
 Expected:
@@ -758,9 +758,9 @@ OK
 - [ ] **Step 6: Smoke-test the CLI against the SWS repo itself.**
 
 ```bash
-cd /Users/piripocchio8/Projects/scientific-writing-superpowers
+cd $REPO_ROOT
 mkdir -p claude_memory
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python scripts/sws_fs_index.py --root . --out /tmp/sws_self_index.json
+$DEV_PY scripts/sws_fs_index.py --root . --out /tmp/sws_self_index.json
 head -30 /tmp/sws_self_index.json
 ```
 
@@ -781,7 +781,7 @@ git add scripts/sws_fs_index.py tests/__init__.py tests/test_fs_index.py
 git commit -m "$(cat <<'EOF'
 feat: filesystem-index utility for project state snapshots
 
-Adds scripts/sws_fs_index.py (pure stdlib, pymol25-compatible) that
+Adds scripts/sws_fs_index.py (pure stdlib, dev-env-compatible) that
 walks a project tree and writes a JSON manifest of file metadata so
 later tool calls read the manifest instead of running ls/find.
 Excludes .git, _archive, .venv, __pycache__, *.backup_pre_*.{docx,tex,bib,cls},
@@ -840,10 +840,10 @@ SWS is a Claude Code plugin; most testing happens by installing it locally and e
 4. **Run the filesystem-index test suite** to confirm the Python utility works in your environment:
 
    ```bash
-   /path/to/pymol25-or-equivalent/python -m unittest tests.test_fs_index -v
+   /path/to/dev-env-or-equivalent/python -m unittest tests.test_fs_index -v
    ```
 
-   The repo's reference Python env is `pymol25` (mamba). Any Python 3.9+ with stdlib-only is fine — `sws_fs_index.py` uses no external dependencies.
+   The repo's reference Python env is `dev-env name` (mamba). Any Python 3.9+ with stdlib-only is fine — `sws_fs_index.py` uses no external dependencies.
 
 5. **Test an agent change** by installing the plugin, opening Claude Code in a synthetic SWS manuscript project, and invoking the affected agent.
 6. **Test a journal-style overlay** by placing it at `Manuscript/_journal-style/<slug>.md` in a test project and confirming the relevant agent reads it.
@@ -887,7 +887,7 @@ git commit -m "$(cat <<'EOF'
 docs: add CONTRIBUTING.md with scope, test setup, and PR conventions
 
 Codifies the in-scope/out-of-scope contribution surface (locked
-2026-05-06), the local-test setup (pymol25 stdlib-only Python),
+2026-05-06), the local-test setup (dev-env stdlib-only Python),
 PR conventions (Conventional Commits, atomic), and the recycled-
 trio attribution rule. Cycle #1 task 6.
 
@@ -1016,7 +1016,7 @@ labels: bug
 
 - OS:
 - Claude Code version:
-- Python env (pymol25 / other; only relevant for the filesystem-index utility or future Python utilities):
+- Python env (dev env / other; only relevant for the filesystem-index utility or future Python utilities):
 - Active SWS profile (from `.sws-project.local.md`):
 - Active SWS format (`docx` or `latex`):
 
@@ -1177,7 +1177,7 @@ If counts or ordering differ, stop and inspect — re-running steps from earlier
 - [ ] **Step 2: Run the test suite one more time** to confirm nothing regressed.
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_fs_index -v
+$DEV_PY -m unittest tests.test_fs_index -v
 ```
 
 Expected: 4 tests pass.
@@ -1221,7 +1221,7 @@ gh pr create --title "Cycle #1: foundation (manifest, recycled trio, fs-index, c
 - `.claude-plugin/plugin.json` and the canonical directory scaffold.
 - `references/folder-topology.md` and `references/marker-schema.md`.
 - Recycled superpowers trio: `brainstormer`, `planner`, `code-reviewer` (`model: inherit`) — copy-with-MIT-attribution mechanism.
-- `scripts/sws_fs_index.py` filesystem-index utility (pure stdlib, pymol25-compatible) with 4 unit tests.
+- `scripts/sws_fs_index.py` filesystem-index utility (pure stdlib, dev-env-compatible) with 4 unit tests.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), 3 issue templates.
 
 ## Test plan
@@ -1283,7 +1283,7 @@ Run this checklist before declaring cycle #1 complete.
 | Folder-topology reference doc | Task 2 |
 | Marker schema reference doc | Task 3 |
 | Recycled-trio re-export | Task 4 |
-| Filesystem-index utility (Python pymol25) | Task 5 |
+| Filesystem-index utility (Python, dev env) | Task 5 |
 | `CONTRIBUTING.md` | Task 6 |
 | `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1) | Task 7 |
 | 3 issue templates | Task 8 |

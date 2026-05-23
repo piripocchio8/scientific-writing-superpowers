@@ -128,9 +128,9 @@ locked_decisions:
     choice: "Both resolve-journal-style and resolve-call-rules use the same hybrid-B-C pattern: emit only fields the user actively confirmed or the source actively stated. Don't write fields that 'match the profile' by default."
     rationale: "User correction during Section 4. Overlay file is concise (only diffs from profile + user-confirmed drops); merge is unambiguous; user is in the loop for any rule that falls."
 
-  D19_venv_discipline_no_pymol25_in_published_code:
-    choice: "Plugin scripts never reference the dev mamba env (pymol25). Init-project creates <paper>/.venv/ at bootstrap and installs requirements/sws-deps.txt. All plugin Python invokes via $PAPER_ROOT/.venv/bin/python through scripts/sws_python.sh wrapper."
-    rationale: "User correction during Section 4. pymol25 is the dev's internal env; published code must be portable. Existing Claude-environment capabilities (Read for DOCX/PDF text) used first; venv covers what Read cannot."
+  D19_venv_discipline_no_dev_env_name_in_published_code:
+    choice: "Plugin scripts never reference the dev mamba env. Init-project creates <paper>/.venv/ at bootstrap and installs requirements/sws-deps.txt. All plugin Python invokes via $PAPER_ROOT/.venv/bin/python through scripts/sws_python.sh wrapper."
+    rationale: "User correction during Section 4. the dev mamba env is the dev's internal env; published code must be portable. Existing Claude-environment capabilities (Read for DOCX/PDF text) used first; venv covers what Read cannot."
 
   D20_venv_per_paper:
     choice: "Per-paper <paper>/.venv/, not plugin-global. Each paper isolates its own deps. Already in .gitignore per CLAUDE.md."

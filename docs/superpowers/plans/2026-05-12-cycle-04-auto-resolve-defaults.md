@@ -8,7 +8,7 @@
 
 **Tech stack:** Pure stdlib. No new imports.
 
-**Working directory:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`.
+**Working directory:** `$REPO_ROOT/`.
 
 **Branch:** `cycle/04-auto-resolve-defaults`.
 
@@ -18,7 +18,7 @@
 - Tests under edit: `tests/test_init_project.py`
 - Skill under edit: `skills/init-project/SKILL.md`
 
-**Reference Python interpreter:** `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python`
+**Reference Python interpreter:** `$DEV_PY`
 
 ---
 
@@ -91,7 +91,7 @@ class TestDefaultResolutions(unittest.TestCase):
 - [ ] **Step 2: Run tests — expect 9 failures.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project.TestDefaultResolutions -v
+$DEV_PY -m unittest tests.test_init_project.TestDefaultResolutions -v
 ```
 
 - [ ] **Step 3: Add `SAFE_DEFAULTS` and `default_resolutions()` to `scripts/sws_init_project.py` near the `_marker_vars` / `_claude_md_vars` helpers.**
@@ -145,7 +145,7 @@ p_defaults.set_defaults(func=_cli_defaults)
 - [ ] **Step 6: Run full test suite — expect 76 total.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -5
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -5
 ```
 
 - [ ] **Step 7: Commit.**
@@ -342,7 +342,7 @@ docs(skill): surface auto-resolutions in plan presentation + user-file summary p
 - [ ] **Step 1: Run full unit test suite.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -5
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -5
 ```
 
 Expected: `Ran 76 tests in Xs` with `OK`.
@@ -356,14 +356,14 @@ touch /tmp/sws_c4_smoke/paper.docx
 mkdir -p /tmp/sws_c4_smoke/claude_material
 echo "# user notes" > /tmp/sws_c4_smoke/CLAUDE.md
 
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python \
-  /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_init_project.py \
+$DEV_PY \
+  $REPO_ROOT/scripts/sws_init_project.py \
   scan --root /tmp/sws_c4_smoke > /tmp/sws_c4_conflicts.json
 
 cat /tmp/sws_c4_conflicts.json
 
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python \
-  /Users/piripocchio8/Projects/scientific-writing-superpowers/scripts/sws_init_project.py \
+$DEV_PY \
+  $REPO_ROOT/scripts/sws_init_project.py \
   defaults --conflicts /tmp/sws_c4_conflicts.json
 ```
 

@@ -8,7 +8,7 @@
 
 **Tech stack:** Python 3.9+. PyYAML for overlay synthesis (in `.venv/`). Pure stdlib for hook utilities. Bash for thin wrappers. Sonnet subagent for guide-for-authors → frontmatter synthesis.
 
-**Working directory:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`.
+**Working directory:** `$REPO_ROOT/`.
 
 **Branch:** `cycle/06-profile-and-overlay` (created from main after cycle #5 merge).
 
@@ -19,12 +19,12 @@
 - Agent roster: `claude_memory/project_roster_v0.1.md`
 
 **Spec corrections to honor in every task:**
-- D19/D20: NO `pymol25` references in any committed plugin file (scripts/, skills/, profiles/, hooks/). The dev's mamba env is only for running the dev test suite locally; do not name it in any artifact that ships to users.
+- D19/D20: NO `dev-env name` references in any committed plugin file (scripts/, skills/, profiles/, hooks/). The dev's mamba env is only for running the dev test suite locally; do not name it in any artifact that ships to users.
 - D17/D18: Overlay key present (including explicit `null`) wins. Synthesizer asks user-confirm on every field where source is silent.
 - D14: List-typed overlay fields replace profile lists entirely.
 - D15/D16: Re-resolve archives the prior overlay to `_archive/<slug>-YYYYMMDD-HHMMSS.md` and prints a diff summary.
 
-**Reference Python interpreter (for running the dev test suite ONLY — never named in plugin code):** `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python`. Substitute `$DEV_PY` for it in commands below if you prefer.
+**Reference Python interpreter (for running the dev test suite ONLY — never named in plugin code):** `$DEV_PY`. Substitute `$DEV_PY` for it in commands below if you prefer.
 
 ---
 
@@ -139,7 +139,7 @@ $DEV_PY -m unittest tests.test_sws_python_wrapper -v
 
 Document the slash command: `/sws:install-deps` reads `${CLAUDE_PLUGIN_ROOT}/requirements/sws-deps.txt`, creates `<paper>/.venv/` if absent using the system `python3 -m venv`, runs `<paper>/.venv/bin/pip install -r ${CLAUDE_PLUGIN_ROOT}/requirements/sws-deps.txt`. Marker check guards against running outside an SWS project. If `marker.format == "latex"`, also install `pylatexenc>=2.10`.
 
-Skill steps use `${CLAUDE_PLUGIN_ROOT}` for plugin paths and `$PAPER_ROOT` (resolved from the marker) for paper paths. No `pymol25` references.
+Skill steps use `${CLAUDE_PLUGIN_ROOT}` for plugin paths and `$PAPER_ROOT` (resolved from the marker) for paper paths. No `dev-env name` references.
 
 - [ ] **Step 7: Commit.**
 
@@ -1184,7 +1184,7 @@ EOF
 | D16 (diff summary) | T9 + T10 |
 | D17 (explicit null drops scalar) | T4 + T5 |
 | D18 (synthesizer emits only confirmed fields) | T9 + T10 |
-| D19 (no pymol25 in published code) | called out at top + every task uses `${CLAUDE_PLUGIN_ROOT}` and `$DEV_PY` only |
+| D19 (no dev-env name in published code) | called out at top + every task uses `${CLAUDE_PLUGIN_ROOT}` and `$DEV_PY` only |
 | D20 (per-paper venv) | T2 + T12 |
 
 Activation matrix covered in T5 + T7. E1–E10 edge cases covered in T5 + T9 + T10. Smoke covers integration in T13.

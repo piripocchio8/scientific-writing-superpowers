@@ -8,7 +8,7 @@
 
 **Tech stack:** Same as cycle #2. Pure stdlib, `pathlib`, `json`, `unittest`. HTML-comment markers for idempotent section replacement.
 
-**Working directory:** `/Users/piripocchio8/Projects/scientific-writing-superpowers/`.
+**Working directory:** `$REPO_ROOT/`.
 
 **Branch:** `cycle/03-claude-md-append`.
 
@@ -19,7 +19,7 @@
 - Tests under edit: `tests/test_init_project.py`
 - Skill under edit: `skills/init-project/SKILL.md`
 
-**Reference Python interpreter:** `/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python`
+**Reference Python interpreter:** `$DEV_PY`
 
 ---
 
@@ -42,7 +42,7 @@ def test_C4_options_include_append(self):
 - [ ] **Step 2: Run test — expect failure (options list does not yet contain "append").**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project.TestScanConflicts.test_C4_options_include_append -v
+$DEV_PY -m unittest tests.test_init_project.TestScanConflicts.test_C4_options_include_append -v
 ```
 
 - [ ] **Step 3: Update C4 block in `scan_conflicts`.**
@@ -254,7 +254,7 @@ class TestAppendSwsSection(unittest.TestCase):
 - [ ] **Step 2: Run tests — expect 4 failures.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest tests.test_init_project.TestAppendSwsSection -v
+$DEV_PY -m unittest tests.test_init_project.TestAppendSwsSection -v
 ```
 
 - [ ] **Step 3: Add execute branch in `_execute_op`.**
@@ -303,7 +303,7 @@ elif op.kind == "append_sws_section":
 - [ ] **Step 6: Run full test suite — expect 67 total.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -5
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -5
 ```
 
 - [ ] **Step 7: Commit.**
@@ -362,7 +362,7 @@ docs(skill): document C4 append option in init-project SKILL.md
 - [ ] **Step 1: Run full unit test suite.**
 
 ```bash
-/Users/piripocchio8/opt/miniconda3/envs/pymol25/bin/python -m unittest discover tests -v 2>&1 | tail -5
+$DEV_PY -m unittest discover tests -v 2>&1 | tail -5
 ```
 
 Expected: `Ran 67 tests in Xs` with `OK`.

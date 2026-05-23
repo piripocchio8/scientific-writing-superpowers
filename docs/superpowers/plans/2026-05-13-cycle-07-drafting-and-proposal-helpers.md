@@ -96,7 +96,7 @@ Phase 3 re-edits (after phase 1 baseline):
 - [ ] **Step 1: Read current .gitignore**
 
 ```bash
-cat /Users/piripocchio8/Projects/scientific-writing-superpowers/.gitignore
+cat $REPO_ROOT/.gitignore
 ```
 
 - [ ] **Step 2: Append `_perspective_beta/` line**
@@ -409,7 +409,7 @@ def test_placeholder_does_not_match_real_citation():
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd /Users/piripocchio8/Projects/scientific-writing-superpowers
+cd $REPO_ROOT
 python3 -m pytest tests/test_citation_key_parser.py -v
 ```
 Expected: ImportError or collection error (sws_citation_key doesn't exist yet).
@@ -1436,7 +1436,7 @@ git commit -m "feat(cycle-07): /sws:draft-section skill (phase-1: intro only)"
 - [ ] **Step 1: Run the existing cycle-#6 smoke to verify nothing regressed**
 
 ```bash
-cd /Users/piripocchio8/Projects/scientific-writing-superpowers
+cd $REPO_ROOT
 bash tests/smoke_cycle_06.sh
 ```
 Expected: 8/8 steps pass (cycle-#6 baseline).
@@ -1488,7 +1488,7 @@ Expected: prints "outline-architect can run" with exit 0.
 ### Task 13: Read the source manuscript (READ-ONLY)
 
 **Files:**
-- Read-only: `/Users/piripocchio8/Library/CloudStorage/OneDrive-SharedLibraries-UniversitàdiNapoliFedericoII/Cyclic Peptides - General/Procentese et al_2026_Perspective_ChemBioChem/Manuscript/Procentese et al_2026_ChemBioChem_20260513.docx`
+- Read-only: `$TARGET_MANUSCRIPT` — local path to the beta-test manuscript, kept out of version control (never commit a real path).
 - Create: `_perspective_beta/source-snapshot.md`
 
 Use Claude's built-in DOCX reading skill. Do NOT use the docx-edit tools. Do NOT write to the manuscript file.
@@ -1496,7 +1496,7 @@ Use Claude's built-in DOCX reading skill. Do NOT use the docx-edit tools. Do NOT
 - [ ] **Step 1: Use the Read tool on the manuscript path**
 
 ```
-Read tool: file_path = "/Users/piripocchio8/Library/CloudStorage/OneDrive-SharedLibraries-UniversitàdiNapoliFedericoII/Cyclic Peptides - General/Procentese et al_2026_Perspective_ChemBioChem/Manuscript/Procentese et al_2026_ChemBioChem_20260513.docx"
+Read tool: file_path = "$TARGET_MANUSCRIPT"   # local path to the beta-test manuscript; kept out of version control
 ```
 
 - [ ] **Step 2: Extract and write source-snapshot.md**
@@ -1552,7 +1552,7 @@ figures: {}
 
 ## Intro
 
-Arc: hook (Semaglutide-driven peptide revival, market context) → gap (cyclic peptides specifically lag in clinical translation despite stability advantages) → contribution (this perspective frames the chemistry-biology challenge and proposes a synthesis-to-clinic pipeline) → roadmap (the perspective covers X, Y, Z).
+Arc: hook (broad framing / market or field context) → gap (the specific unmet challenge the perspective targets) → contribution (how this perspective frames the problem and what it proposes) → roadmap (the perspective covers X, Y, Z). [illustrative placeholder — real beta content lives only in the gitignored sandbox]
 ```
 
 - [ ] **Step 2: Commit gitignore-respecting** (no commit; sandbox is gitignored)
@@ -1611,7 +1611,7 @@ Expected: file exists, word count between 720 and 880 (±10% of 800).
 Path: `_perspective_beta/comparison.md`:
 
 ```markdown
-# Beta comparison — Procentese et al. perspective intro
+# Beta comparison — the beta-test perspective intro
 
 ## Source (current manuscript intro, subsection 1, verbatim)
 
@@ -2790,7 +2790,7 @@ Plan: docs/superpowers/plans/2026-05-13-cycle-07-drafting-and-proposal-helpers.m
 - [ ] All cycle-#6 baseline tests still pass (`bash tests/smoke_cycle_06.sh`)
 - [ ] All new cycle-#7 unit tests pass (`pytest tests/test_*.py`) — ~70 new tests
 - [ ] Cycle-#7 smoke passes on fixture (`bash tests/smoke_cycle_07.sh`) — 11 steps
-- [ ] Mid-cycle beta-test (Procentese et al. perspective intro) reviewed and approved before phase 3 began
+- [ ] Mid-cycle beta-test (the beta-test perspective intro) reviewed and approved before phase 3 began
 - [ ] AI-writing-tells.md catalog has 40-60 tells across 5 categories, all required fields present
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

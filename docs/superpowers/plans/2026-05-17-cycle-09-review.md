@@ -329,7 +329,7 @@ def test_includes_verification_status_placeholder(tmp_path):
 - [ ] **Step 2: Run tests to verify they all fail**
 
 ```bash
-cd /Users/piripocchio8/Projects/scientific-writing-superpowers
+cd $REPO_ROOT
 pytest tests/test_claim_extract.py -v
 ```
 
@@ -1235,7 +1235,7 @@ git commit -m "feat(cycle-09): section-router 'review' action axis (D14)"
 Run:
 
 ```bash
-grep -n "## R3\|I/O wrapper\|_review/consistency-report" /Users/piripocchio8/Projects/scientific-writing-superpowers/references/agent-contract.md | head -20
+grep -n "## R3\|I/O wrapper\|_review/consistency-report" $REPO_ROOT/references/agent-contract.md | head -20
 ```
 
 - [ ] **Step 2: Extend the R3 wrappers table**
