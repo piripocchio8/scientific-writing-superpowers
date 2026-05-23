@@ -292,6 +292,19 @@ def _to_pairs(raw) -> List[Tuple[Dict[str, float], Dict[str, float]]]:
     return [(p[0], p[1]) for p in raw]
 
 
+def _stats_from_weights(wd: Dict[str, object]) -> Optional[Dict[str, Tuple[float, float]]]:
+    """Recover the fitted standardization basis from a fit-output weights JSON.
+
+    `--fit-weights` serializes stats as {feature: [mean, sd]}; convert the
+    lists back to (mean, sd) tuples so distances reuse the same scale across
+    rounds. Returns None when the JSON carries no usable `stats` key (D8).
+    """
+    raw = wd.get("stats")
+    if not isinstance(raw, dict) or not raw:
+        return None
+    return {k: (float(v[0]), float(v[1])) for k, v in raw.items()}
+
+
 def _parse_floats(csv: Optional[str]) -> Optional[List[float]]:
     if not csv:
         return None
@@ -321,13 +334,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.distance is not None:
         a = _load(args.distance[0])
         b = _load(args.distance[1])
+        fitted_stats = None
         if args.weights:
             wd = _load(args.weights)
             weights, w_h = wd["weights"], wd.get("w_h", 0.0)
+            fitted_stats = _stats_from_weights(wd)
         else:
             weights = {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
             w_h = 0.0
-        stats = standardization_stats([a, b])
+        # Reuse the fitted standardization basis when present so per-round
+        # distances stay comparable; otherwise fall back to recompute (D8).
+        stats = fitted_stats if fitted_stats is not None else standardization_stats([a, b])
         print(json.dumps(weighted_distance(a, b, weights, w_h, args.haiku_sim, stats)))
         return 0
 
@@ -358,7 +375,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             weights = {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
             w_h = 0.0
-        stats = standardization_stats(vecs)
+        fitted_stats = _stats_from_weights(wd) if args.weights else None
+        stats = fitted_stats if fitted_stats is not None else standardization_stats(vecs)
         print(json.dumps(self_band(vecs, weights, w_h, stats, gamma=args.gamma)))
         return 0
 

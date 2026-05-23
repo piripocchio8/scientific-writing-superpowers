@@ -2,7 +2,7 @@
 name: calibrate-style
 description: |
   Build a reusable, evidence-backed voice profile from the author's own papers in Zotero. Runs the style-calibrator agent's 5-phase iterative held-out loop and writes _voice/{profile.md, field-profile.md, style-evolution.md, sources.json, convergence.md}. The drafters/revisers/humanizer then write in the author's voice. Default-inactive in editorial and commentary-reply profiles.
-allowed-tools: Bash, Read, Write, Glob, Task, WebFetch
+allowed-tools: Bash, Read, Write, Glob, Task
 ---
 
 # /sws:calibrate-style
