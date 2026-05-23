@@ -19,7 +19,7 @@ cover_letter_required: false
 supplementary_allowed: true
 refs_style: numbered
 agents_active: []
-agents_inactive: [response-to-reviewers, methods-writer, drafter-fast, claim-verifier, bibliography-fidelity-checker]
+agents_inactive: [response-to-reviewers, methods-writer, drafter-fast, claim-verifier, bibliography-fidelity-checker, data-curator, plot-maker]
 ---
 
 # Funding-proposal profile (fixture)

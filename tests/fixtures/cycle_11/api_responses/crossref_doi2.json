@@ -1,0 +1,16 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message": {
+    "DOI": "10.1000/xyz002",
+    "title": ["Peptide bond hydrolysis mechanisms"],
+    "author": [{"given": "Alex", "family": "Doe", "sequence": "first"}],
+    "published": {"date-parts": [[2021, 7, 1]]},
+    "container-title": ["Chemistry Letters"],
+    "volume": "10",
+    "issue": "7",
+    "page": "55-60",
+    "type": "journal-article",
+    "ISSN": ["9876-5432"]
+  }
+}

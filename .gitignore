@@ -12,6 +12,12 @@ _perspective_beta/
 # Claude Code per-machine local settings
 .claude/settings.local.json
 
+# Cycle #11 smoke fixture generated files (rebuilt by smoke_cycle_11.sh)
+tests/fixtures/cycle_11/zenodo_db/data/*.xlsx
+tests/fixtures/cycle_11/zenodo_db/figures/*.png
+tests/fixtures/cycle_11/zenodo_db/figures/*.pdf
+tests/fixtures/cycle_11/zenodo_db/figures/*.svg
+
 # Python / general
 .venv/
 __pycache__/

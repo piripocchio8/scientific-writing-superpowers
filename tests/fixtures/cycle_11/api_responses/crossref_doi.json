@@ -1,0 +1,16 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message": {
+    "DOI": "10.1000/xyz001",
+    "title": ["Kinetic analysis of model peptide hydrolysis"],
+    "author": [{"given": "Jane", "family": "Smith", "sequence": "first"}],
+    "published": {"date-parts": [[2022, 3, 15]]},
+    "container-title": ["Journal of Chemical Research"],
+    "volume": "42",
+    "issue": "3",
+    "page": "100-115",
+    "type": "journal-article",
+    "ISSN": ["1234-5678"]
+  }
+}
