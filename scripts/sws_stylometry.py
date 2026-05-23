@@ -213,3 +213,157 @@ def fit_fisher_weights(
     weights = {k: norm[i] for i, k in enumerate(FEATURE_ORDER)}
     w_h = norm[-1]
     return {"weights": weights, "w_h": w_h, "stats": stats}
+
+
+# --- RBF kernel, gamma, self-band, keep-best (D8/D10) ----------------------
+def rbf(distance: float, gamma: float) -> float:
+    """exp(-gamma*D), bounded in (0,1] for D>=0."""
+    d = max(distance, 0.0)
+    return math.exp(-gamma * d)
+
+
+def _median(xs: Sequence[float]) -> float:
+    s = sorted(xs)
+    n = len(s)
+    if n == 0:
+        return 0.0
+    mid = n // 2
+    return s[mid] if n % 2 else 0.5 * (s[mid - 1] + s[mid])
+
+
+def median_gamma(intra_distances: Sequence[float], default: float = 1.0) -> float:
+    """gamma = 1/median(intra-author weighted distances); guard zero median."""
+    med = _median(list(intra_distances))
+    if med <= 1e-12:
+        return 1.0 / max(default, 1e-12) * 1e3  # large gamma when author is self-identical
+    return 1.0 / med
+
+
+def _intra_pairs(vectors: Sequence[Dict[str, float]]):
+    for i in range(len(vectors)):
+        for j in range(i + 1, len(vectors)):
+            yield vectors[i], vectors[j]
+
+
+def self_band(
+    author_vectors: Sequence[Dict[str, float]],
+    weights: Dict[str, float],
+    w_h: float,
+    stats: Dict[str, Tuple[float, float]],
+    gamma: Optional[float] = None,
+    haiku_sims: Optional[Sequence[float]] = None,
+) -> Dict[str, float]:
+    """Intra-author self-similarity band as RBF-similarity mean +/- sd."""
+    pairs = list(_intra_pairs(author_vectors))
+    if not pairs:
+        return {"band_mean": 1.0, "band_sd": 0.0, "band_lo": 1.0, "band_hi": 1.0, "gamma": gamma or 1.0}
+    haiku_sims = list(haiku_sims) if haiku_sims is not None else [1.0] * len(pairs)
+    dists = [
+        weighted_distance(a, b, weights, w_h, haiku_sims[i], stats)["distance"]
+        for i, (a, b) in enumerate(pairs)
+    ]
+    if gamma is None:
+        gamma = median_gamma(dists)
+    sims = [rbf(d, gamma) for d in dists]
+    m = _mean(sims)
+    sd = _pop_sd(sims)
+    return {
+        "band_mean": m, "band_sd": sd,
+        "band_lo": m - sd, "band_hi": m + sd, "gamma": gamma,
+    }
+
+
+def keep_best(history: Sequence[Tuple[int, float]]) -> List[float]:
+    """Running max of per-round scores: a worsening edit is reverted (monotone)."""
+    best = float("-inf")
+    out: List[float] = []
+    for _round, score in history:
+        best = max(best, score)
+        out.append(best)
+    return out
+
+
+# --- CLI -------------------------------------------------------------------
+def _load(path: str):
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _to_pairs(raw) -> List[Tuple[Dict[str, float], Dict[str, float]]]:
+    return [(p[0], p[1]) for p in raw]
+
+
+def _parse_floats(csv: Optional[str]) -> Optional[List[float]]:
+    if not csv:
+        return None
+    return [float(x) for x in csv.split(",") if x.strip()]
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    p = argparse.ArgumentParser(description="SWS stylometry engine")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--vector", metavar="TEXT")
+    g.add_argument("--distance", nargs=2, metavar=("A_JSON", "B_JSON"))
+    g.add_argument("--fit-weights", nargs=2, metavar=("POS_JSON", "NEG_JSON"))
+    g.add_argument("--rbf", type=float, metavar="D")
+    g.add_argument("--self-band", metavar="VECS_JSON")
+    p.add_argument("--weights", metavar="W_JSON")
+    p.add_argument("--haiku-sim", type=float, default=1.0)
+    p.add_argument("--gamma", type=float)
+    p.add_argument("--lam", type=float, default=0.3)
+    p.add_argument("--pos-haiku")
+    p.add_argument("--neg-haiku")
+    args = p.parse_args(argv)
+
+    if args.vector is not None:
+        print(json.dumps(feature_vector(args.vector)))
+        return 0
+
+    if args.distance is not None:
+        a = _load(args.distance[0])
+        b = _load(args.distance[1])
+        if args.weights:
+            wd = _load(args.weights)
+            weights, w_h = wd["weights"], wd.get("w_h", 0.0)
+        else:
+            weights = {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
+            w_h = 0.0
+        stats = standardization_stats([a, b])
+        print(json.dumps(weighted_distance(a, b, weights, w_h, args.haiku_sim, stats)))
+        return 0
+
+    if args.fit_weights is not None:
+        pos = _to_pairs(_load(args.fit_weights[0]))
+        neg = _to_pairs(_load(args.fit_weights[1]))
+        res = fit_fisher_weights(
+            pos, neg, lam=args.lam,
+            pos_haiku=_parse_floats(args.pos_haiku),
+            neg_haiku=_parse_floats(args.neg_haiku),
+        )
+        # stats are not JSON-serialisable as tuples by default; convert.
+        res_out = {"weights": res["weights"], "w_h": res["w_h"],
+                   "stats": {k: list(v) for k, v in res["stats"].items()}}
+        print(json.dumps(res_out))
+        return 0
+
+    if args.rbf is not None:
+        gamma = args.gamma if args.gamma is not None else 1.0
+        print(json.dumps({"similarity": rbf(args.rbf, gamma)}))
+        return 0
+
+    if getattr(args, "self_band") is not None:
+        vecs = _load(getattr(args, "self_band"))
+        if args.weights:
+            wd = _load(args.weights)
+            weights, w_h = wd["weights"], wd.get("w_h", 0.0)
+        else:
+            weights = {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
+            w_h = 0.0
+        stats = standardization_stats(vecs)
+        print(json.dumps(self_band(vecs, weights, w_h, stats, gamma=args.gamma)))
+        return 0
+
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
