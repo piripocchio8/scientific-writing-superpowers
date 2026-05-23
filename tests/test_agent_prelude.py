@@ -68,6 +68,15 @@ def parse_env(text: str) -> dict[str, str]:
     return out
 
 
+def parse_env_key(text: str, key: str) -> str | None:
+    """Return the value of an arbitrary env var from `env` output, or None."""
+    prefix = key + "="
+    for line in text.splitlines():
+        if line.startswith(prefix):
+            return line[len(prefix):]
+    return None
+
+
 COMMUNICATION_MARKER = "---\nprofile: communication\ntarget_journal: chembiochem\n---\n"
 NULL_PROFILE_MARKER = "---\nprofile: null\n---\n"
 
@@ -123,6 +132,32 @@ class TestAgentPrelude(unittest.TestCase):
             env = parse_env(stdout)
             self.assertEqual(env["RESOLVED_OK"], "1", msg=stderr)
             self.assertEqual(env["RESOLVED_PROFILE_ID"], "funding-proposal")
+
+    # --- cycle #10: VOICE_PROFILE export (D13) ---
+
+    def test_VOICE_PROFILE_empty_when_absent(self):
+        """VOICE_PROFILE must be exported as empty string when _voice/profile.md does not exist."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            make_paper_with_venv(d, COMMUNICATION_MARKER)
+            code, stdout, stderr = source_prelude(d, "drafter")
+            val = parse_env_key(stdout, "VOICE_PROFILE")
+            self.assertIsNotNone(val, "VOICE_PROFILE not found in env output")
+            self.assertEqual(val, "", f"expected empty VOICE_PROFILE, got {val!r}")
+
+    def test_VOICE_PROFILE_set_when_present(self):
+        """VOICE_PROFILE must be exported as the full path to _voice/profile.md when the file exists."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            make_paper_with_venv(d, COMMUNICATION_MARKER)
+            voice_file = d / "_voice" / "profile.md"
+            voice_file.parent.mkdir(parents=True)
+            voice_file.write_text("## Global voice\n")
+            code, stdout, stderr = source_prelude(d, "drafter")
+            val = parse_env_key(stdout, "VOICE_PROFILE")
+            self.assertIsNotNone(val, "VOICE_PROFILE not found in env output")
+            self.assertEqual(val, str(voice_file),
+                             f"expected {voice_file!s}, got {val!r}")
 
 
 if __name__ == "__main__":

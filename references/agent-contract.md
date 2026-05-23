@@ -102,3 +102,8 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 | `_review/bibliography-fidelity-checker/report.md` | Markdown report with V0.1 LIMITATION header + findings or skip-reason note (D9, D9a, D9b, D9c) | bibliography-fidelity-checker |
 | `_review/bibliography-fidelity-checker/flags.json` | List of `{paragraph_id, section, overlap_text, zotero_item_key, zotero_title, zotero_authors, zotero_year, zotero_collection, page_hint}` | bibliography-fidelity-checker |
 | `_review/bibliography-fidelity-checker/status.json` | Dict `{zotero_skill_available, zotero_desktop_detected, zotero_sqlite_path, ran, skip_reason, library_item_count?}` | bibliography-fidelity-checker |
+| `_voice/profile.md` | YAML frontmatter (feature targets per `references/voice-profile-schema.md`) + body: `## Global voice` then `## Section deltas` with `### <Section>` blocks. WRITTEN by style-calibrator; READ by drafter-flagship, drafter-fast, reviser-full, reviser-fast, humanizer via the prelude-exported `$VOICE_PROFILE`. SEPARATE axis from `resolve_overlay.py` (D13). | style-calibrator (write) / 5 consumers (read) |
+| `_voice/field-profile.md` | One-shot subfield conventions (D5; no per-section breakdown, no loop) | style-calibrator |
+| `_voice/style-evolution.md` | Diachronic feature x year/era table + reading (D7) | style-calibrator |
+| `_voice/sources.json` | `[{zotero_key, title, year, author_position, has_pdf, role: train|heldout, recency_weight}]` + fitted weights snapshot + gamma + self-band | style-calibrator |
+| `_voice/convergence.md` | Per round, per section: distance, RBF sim, Haiku median, what changed, why, seed prompt + candidate text (D11) | style-calibrator |
