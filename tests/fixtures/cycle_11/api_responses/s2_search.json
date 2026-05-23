@@ -1,0 +1,25 @@
+{
+  "total": 2,
+  "offset": 0,
+  "next": null,
+  "data": [
+    {
+      "paperId": "abc123",
+      "title": "Kinetic analysis of model peptide hydrolysis",
+      "authors": [{"authorId": "1", "name": "Smith J"}],
+      "year": 2022,
+      "externalIds": {"DOI": "10.1000/xyz001"},
+      "abstract": "We studied the kinetics of peptide hydrolysis using stopped-flow methods.",
+      "citationCount": 14
+    },
+    {
+      "paperId": "def456",
+      "title": "Peptide bond hydrolysis mechanisms in chemistry",
+      "authors": [{"authorId": "2", "name": "Doe A"}],
+      "year": 2021,
+      "externalIds": {"DOI": "10.1000/xyz002"},
+      "abstract": "A review of hydrolysis mechanisms with kinetic data.",
+      "citationCount": 8
+    }
+  ]
+}
