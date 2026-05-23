@@ -16,8 +16,8 @@ disclosure_required: true
 cover_letter_required: true
 supplementary_allowed: true
 refs_style: numbered
-agents_active: [outline-architect, drafter-flagship, drafter-fast, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker, style-calibrator]
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer]
+agents_active: [outline-architect, drafter-flagship, drafter-fast, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker, style-calibrator, plot-maker, literature-searcher, bibliography-curator]
+agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator]
 ---
 
 # Mini-review profile

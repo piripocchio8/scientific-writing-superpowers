@@ -13,8 +13,8 @@ disclosure_required: true
 cover_letter_required: true
 supplementary_allowed: false
 refs_style: numbered
-agents_active: [outline-architect, drafter-flagship, drafter-fast, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker]
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, style-calibrator]
+agents_active: [outline-architect, drafter-flagship, drafter-fast, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker, literature-searcher, bibliography-curator]
+agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker, style-calibrator]
 ---
 
 # Commentary-reply profile
@@ -27,3 +27,5 @@ agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-wr
 ## Drafter notes
 
 No methods of our own (methods-writer, data-curator inactive). Figures are typically reanalyses of the original's data or simple counter-illustrations. peer-reviewer stays active to stress-test the rebuttal logic.
+
+literature-searcher is **exec-tunable** in this profile: active by default but can be suppressed by the exec when the commentary is purely a direct rebuttal with no new literature search needed.

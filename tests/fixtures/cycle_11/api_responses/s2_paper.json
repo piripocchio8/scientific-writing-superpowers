@@ -1,0 +1,12 @@
+{
+  "paperId": "abc123",
+  "title": "Kinetic analysis of model peptide hydrolysis",
+  "authors": [{"authorId": "1", "name": "Smith J"}],
+  "year": 2022,
+  "externalIds": {"DOI": "10.1000/xyz001"},
+  "abstract": "We studied the kinetics of peptide hydrolysis using stopped-flow methods.",
+  "citationCount": 14,
+  "references": [
+    {"paperId": "ghi789", "title": "Classic kinetics paper", "year": 2010}
+  ]
+}
