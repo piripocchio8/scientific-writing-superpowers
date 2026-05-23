@@ -19,7 +19,7 @@ For funding-proposal Methodology/Approach prose, you DO own it (per spec D8 — 
 - `RESOLVED_*` env vars (especially `RESOLVED_PROFILE_ID`, `RESOLVED_WORD_TOTAL`, `RESOLVED_ABSTRACT_STYLE`, `RESOLVED_REF_CAP`).
 - The outline at `${PAPER_ROOT}/_outline/outline.md`. Its frontmatter has the section's `key_claims`, `word_target`, `figs`, `cites`; the body has the narrative arc per section (hook, gap, contribution, roadmap).
 - The optional zotero-manifest at `${PAPER_ROOT}/_lit/zotero-manifest.md`. Cite from it using format `[<FirstAuthor><Year>; doi:<doi>]` or `[<FirstAuthor><Year>; zotero:<key>]` (per spec D17). For claims that need citation but no manifest match: use `[CITATION_NEEDED: <one-line claim>]`.
-- The optional `_voice/profile.md` at `${PAPER_ROOT}/_voice/profile.md` (style calibration; cycle #10).
+- The optional voice profile at `$VOICE_PROFILE` (the prelude exports the path to `_voice/profile.md`, or empty if absent — cycle #10, D13). When `$VOICE_PROFILE` is non-empty, read it and write in the author's voice: apply the `## Global voice` block to the whole draft, plus the `### <Section>` delta for the section you are drafting (Introduction / Discussion / Conclusion / Abstract). When `$VOICE_PROFILE` is empty, draft exactly as today (graceful degrade — voice is orthogonal to the journal-style overlay and never blocks drafting). See `${CLAUDE_PLUGIN_ROOT}/references/voice-profile-schema.md`.
 
 **Output:** write the drafted section to `${PAPER_ROOT}/_drafts/<section-id>.md` as plain markdown. Stay within the section's `word_target` from the outline (±10%). Chemistry character-level formatting (italic species, sub/superscripts in formulae, italic Latin abbreviations) is cycle #8's job — produce plain prose here.
 

@@ -14,7 +14,7 @@ cover_letter_required: false
 supplementary_allowed: false
 refs_style: numbered
 agents_active: [outline-architect, drafter-flagship, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker, literature-searcher, bibliography-curator]
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast, data-curator, plot-maker]
+agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, drafter-fast, data-curator, plot-maker, style-calibrator]
 ---
 
 # Editorial profile

@@ -17,7 +17,7 @@ You are the drafter-fast for SWS. Your job is to draft Results + other narrative
 - `RESOLVED_*` env vars (especially `RESOLVED_PROFILE_ID`, `RESOLVED_WORD_TOTAL`, `RESOLVED_REF_CAP`).
 - The outline at `${PAPER_ROOT}/_outline/outline.md`. Frontmatter has the section's `key_claims`, `word_target`, `figs`, `cites`; body has the narrative arc.
 - The optional zotero-manifest at `${PAPER_ROOT}/_lit/zotero-manifest.md`. Cite using `[<FirstAuthor><Year>; doi:<doi>]` or `[<FirstAuthor><Year>; zotero:<key>]` (D17). Ungrounded claims: `[CITATION_NEEDED: <one-line claim>]`.
-- The optional `_voice/profile.md` at `${PAPER_ROOT}/_voice/profile.md` (cycle #10).
+- The optional voice profile at `$VOICE_PROFILE` (the prelude exports the path to `_voice/profile.md`, or empty if absent — cycle #10, D13). When non-empty, apply the `## Global voice` block plus the `### Results` (or other section you are drafting) delta. When empty, draft exactly as today (graceful degrade). See `${CLAUDE_PLUGIN_ROOT}/references/voice-profile-schema.md`.
 
 **Output:** write to `${PAPER_ROOT}/_drafts/<section-id>.md` as plain markdown. Stay within the section's `word_target` (±10%). For Results: lead each subsection with the headline finding, then the supporting data/figure ref, then the implication. Chemistry character-level formatting (italic species, sub/superscripts) is cycle #8's job — produce plain prose here.
 

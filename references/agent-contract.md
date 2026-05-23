@@ -115,3 +115,8 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 | `refs/_lit-search/<slug>.md` | literature-searcher output — ranked candidates with metadata + relevance note | 11 |
 | `_review/bibliography-audit/report.md` | bibliography-curator audit report — unresolved DOIs, duplicates, format deviations | 11 |
 | `_review/bibliography-audit/fixes.json` | bibliography-curator proposed fixes — list of `{key, field, old, new, source}` | 11 |
+| `_voice/profile.md` | YAML frontmatter (feature targets per `references/voice-profile-schema.md`) + body: `## Global voice` then `## Section deltas` with `### <Section>` blocks. WRITTEN by style-calibrator; READ by drafter-flagship, drafter-fast, reviser-full, reviser-fast, humanizer via the prelude-exported `$VOICE_PROFILE`. SEPARATE axis from `resolve_overlay.py` (D13). | style-calibrator (write) / 5 consumers (read) |
+| `_voice/field-profile.md` | One-shot subfield conventions (D5; no per-section breakdown, no loop) | style-calibrator |
+| `_voice/style-evolution.md` | Diachronic feature x year/era table + reading (D7) | style-calibrator |
+| `_voice/sources.json` | `[{zotero_key, title, year, author_position, has_pdf, role: train|heldout, recency_weight}]` + fitted weights snapshot + gamma + self-band | style-calibrator |
+| `_voice/convergence.md` | Per round, per section: distance, RBF sim, Haiku median, what changed, why, seed prompt + candidate text (D11) | style-calibrator |

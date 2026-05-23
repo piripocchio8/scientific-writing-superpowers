@@ -14,7 +14,7 @@ cover_letter_required: true
 supplementary_allowed: false
 refs_style: numbered
 agents_active: []
-agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker]
+agents_inactive: [proposal-budget-helper, proposal-compliance-helper, methods-writer, data-curator, plot-maker, style-calibrator]
 ---
 
 # Commentary-reply profile (fixture)
