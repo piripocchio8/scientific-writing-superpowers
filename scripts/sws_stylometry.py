@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
-"""SWS stylometry engine (cycle #10, D8/D8a/D10).
+"""SWS stylometry engine (cycle #10/#12, D8/D8a/D10 + voice-metric correction).
 
 Pure stdlib — NO numpy / NLTK / spaCy. Implements:
   * feature_vector(text)            -> ordered dict of 17 stylometric features
-  * weighted_distance(a, b, ...)     -> D = SUM_i w_i (a_i-b_i)^2 + w_h (1-haiku)
-  * fit_fisher_weights(pos, neg, ..) -> diagonal-Fisher weights (regularized)
+  * weighted_distance(a, b, ..)      -> stylometric D = SUM_i w_i (z_a-z_b)^2
+  * fit_fisher_weights(pos, neg, ..) -> CLIPPED diagonal-Fisher weights (stylo only)
+  * fit_channel_mix(..)              -> {alpha, beta, gamma} channel-mix fit
+  * combined_score(..)               -> alpha*exp(-gamma*D_stylo) + beta*haiku_sim
   * rbf(D, gamma)                    -> exp(-gamma*D) in [0,1]
   * median_gamma(intra_distances)    -> gamma from the median heuristic
-  * self_band(author_vectors, ...)   -> intra-author self-similarity band
+  * self_band(author_vectors, ..)    -> intra-author self-similarity band (combined)
 
-The Haiku voice-similarity term is supplied by the caller (style-calibrator
-dispatches Haiku); this script never calls a model. Word-lists below mirror
-references/stylometry-features.md.
+The metric has TWO channels combined at the SIMILARITY level:
+  * stylometric channel: clipped diagonal-Fisher weights over standardized
+    squared feature differences, turned into a similarity by an RBF kernel;
+  * Haiku channel: a pairwise voice similarity supplied by the caller (the
+    style-calibrator dispatches a real Haiku judge; this script never calls a
+    model). A CONSTANT Haiku value collapses that channel — a real judge is
+    required.
+The fitted mix S = alpha*k_stylo + beta*haiku_sim weights each channel by how
+well it separates same-author from different-author pairs. Word-lists below
+mirror references/stylometry-features.md.
 """
 from __future__ import annotations
 
@@ -139,11 +148,13 @@ def weighted_distance(
     a: Dict[str, float],
     b: Dict[str, float],
     weights: Dict[str, float],
-    w_h: float,
-    haiku_sim: float,
     stats: Dict[str, Tuple[float, float]],
 ) -> Dict[str, object]:
-    """D = SUM_i w_i (a_i-b_i)^2 + w_h (1 - haiku_sim), on standardized features."""
+    """Stylometric distance only: D = SUM_i w_i (z_a-z_b)^2 on standardized features.
+
+    The Haiku channel is NOT folded in here; it is combined at the similarity
+    level by ``combined_score`` (voice-metric correction).
+    """
     sa = _standardize(a, stats)
     sb = _standardize(b, stats)
     contrib: Dict[str, float] = {}
@@ -152,9 +163,6 @@ def weighted_distance(
         c = weights.get(k, 0.0) * (sa[k] - sb[k]) ** 2
         contrib[k] = c
         total += c
-    haiku_term = w_h * (1.0 - haiku_sim)
-    contrib["_haiku"] = haiku_term
-    total += haiku_term
     return {"distance": total, "per_feature_contrib": contrib}
 
 
@@ -175,13 +183,18 @@ def fit_fisher_weights(
     pos_pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
     neg_pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
     lam: float = 0.3,
-    pos_haiku: Optional[Sequence[float]] = None,
-    neg_haiku: Optional[Sequence[float]] = None,
+    clip_lo: float = 0.4,
+    clip_hi: float = 2.5,
 ) -> Dict[str, object]:
-    """Diagonal-Fisher weights from boundary conditions, shrunk toward uniform.
+    """Clipped diagonal-Fisher STYLOMETRIC weights, shrunk toward uniform.
 
     POSITIVE pairs (author,author) -> small distance; NEGATIVE pairs
     (author,field) -> large distance. fisher_i = between_i / max(within_i, FLOOR).
+    The weights are shrunk toward uniform by ``lam`` then per-term clipped to
+    ``[clip_lo*u, clip_hi*u]`` (u = 1/len(FEATURE_ORDER)) and renormalized,
+    iterating the clip+renormalize step until it converges so no single feature
+    (e.g. fw_and) can run away. The Haiku channel is fitted separately by
+    ``fit_channel_mix`` — it is NOT folded into these weights.
     """
     all_vecs = [v for pr in list(pos_pairs) + list(neg_pairs) for v in pr]
     stats = standardization_stats(all_vecs)
@@ -194,25 +207,72 @@ def fit_fisher_weights(
         b_var = _mean(between[k])
         fisher[k] = b_var / w_var
 
-    # w_h fitted from the Haiku sample exactly like any other term.
-    if pos_haiku and neg_haiku:
-        pos_d = [(1.0 - s) ** 2 for s in pos_haiku]
-        neg_d = [(1.0 - s) ** 2 for s in neg_haiku]
-        fisher_h = _mean(neg_d) / max(_mean(pos_d), WITHIN_VAR_FLOOR)
-    else:
-        fisher_h = 0.0
+    n = len(FEATURE_ORDER)
+    u = 1.0 / n
+    uniform = u
+    shrunk = {k: max((1.0 - lam) * fisher[k] + lam * uniform, 0.0) for k in FEATURE_ORDER}
+    s = sum(shrunk.values()) or 1.0
+    w = {k: v / s for k, v in shrunk.items()}
 
-    keys = FEATURE_ORDER + ["_h"]
-    raw = [fisher[k] for k in FEATURE_ORDER] + [fisher_h]
-    n = len(keys)
-    uniform = 1.0 / n
-    shrunk = [max((1.0 - lam) * r + lam * uniform, 0.0) for r in raw]
-    s = sum(shrunk) or 1.0
-    norm = [x / s for x in shrunk]
+    lo, hi = clip_lo * u, clip_hi * u
+    for _ in range(8):
+        w = {k: min(max(v, lo), hi) for k, v in w.items()}
+        s = sum(w.values()) or 1.0
+        w = {k: v / s for k, v in w.items()}
 
-    weights = {k: norm[i] for i, k in enumerate(FEATURE_ORDER)}
-    w_h = norm[-1]
-    return {"weights": weights, "w_h": w_h, "stats": stats}
+    return {"weights": w, "stats": stats}
+
+
+# --- channel mix + combined score (voice-metric correction) ----------------
+def fit_channel_mix(
+    pos_pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
+    neg_pairs: Sequence[Tuple[Dict[str, float], Dict[str, float]]],
+    pos_haiku: Sequence[float],
+    neg_haiku: Sequence[float],
+    weights: Dict[str, float],
+    stats: Dict[str, Tuple[float, float]],
+) -> Dict[str, float]:
+    """Fit the similarity-level channel mix {alpha, beta, gamma}.
+
+    gamma = 1/median(D_stylo over pos_pairs); k_stylo = exp(-gamma*D_stylo).
+    Each channel's separation = mean(same-author) - mean(different-author),
+    clamped to >= 1e-6; alpha/beta are the normalized separations. A channel
+    that separates pos from neg better gets the larger weight.
+    """
+    d_pos = [weighted_distance(a, b, weights, stats)["distance"] for a, b in pos_pairs]
+    med = _median(d_pos)
+    gamma = 1.0 / med if med > 1e-12 else 1.0
+
+    ks_pos = [rbf(d, gamma) for d in d_pos]
+    ks_neg = [
+        rbf(weighted_distance(a, b, weights, stats)["distance"], gamma)
+        for a, b in neg_pairs
+    ]
+    sep_s = max(_mean(ks_pos) - _mean(ks_neg), 1e-6)
+    sep_h = max(_mean(list(pos_haiku)) - _mean(list(neg_haiku)), 1e-6)
+    total = sep_s + sep_h
+    alpha = sep_s / total
+    beta = sep_h / total
+    return {"alpha": alpha, "beta": beta, "gamma": gamma}
+
+
+def combined_score(
+    a: Dict[str, float],
+    b: Dict[str, float],
+    haiku_sim: float,
+    weights: Dict[str, float],
+    stats: Dict[str, Tuple[float, float]],
+    gamma: float,
+    alpha: float,
+    beta: float,
+) -> float:
+    """Similarity-level combination: alpha*exp(-gamma*D_stylo) + beta*haiku_sim.
+
+    Bounded in [0,1] for alpha+beta = 1, haiku_sim in [0,1], gamma >= 0.
+    """
+    d = weighted_distance(a, b, weights, stats)["distance"]
+    k_stylo = rbf(d, gamma)
+    return alpha * k_stylo + beta * haiku_sim
 
 
 # --- RBF kernel, gamma, self-band, keep-best (D8/D10) ----------------------
@@ -248,23 +308,33 @@ def _intra_pairs(vectors: Sequence[Dict[str, float]]):
 def self_band(
     author_vectors: Sequence[Dict[str, float]],
     weights: Dict[str, float],
-    w_h: float,
     stats: Dict[str, Tuple[float, float]],
-    gamma: Optional[float] = None,
-    haiku_sims: Optional[Sequence[float]] = None,
+    gamma: float,
+    alpha: float,
+    beta: float,
+    haiku_sims: Sequence[float],
 ) -> Dict[str, float]:
-    """Intra-author self-similarity band as RBF-similarity mean +/- sd."""
+    """Intra-author self-similarity band over ``combined_score`` per pair.
+
+    The band is mean +/- sd of the combined (stylo + Haiku) similarity over all
+    intra-author pairs. ``haiku_sims`` is REQUIRED, one value per intra-author
+    pair in row-major order (pair (i,j), i<j); a real Haiku judge supplies them
+    (a constant collapses the Haiku channel). Raises if the count mismatches.
+    """
     pairs = list(_intra_pairs(author_vectors))
     if not pairs:
-        return {"band_mean": 1.0, "band_sd": 0.0, "band_lo": 1.0, "band_hi": 1.0, "gamma": gamma or 1.0}
-    haiku_sims = list(haiku_sims) if haiku_sims is not None else [1.0] * len(pairs)
-    dists = [
-        weighted_distance(a, b, weights, w_h, haiku_sims[i], stats)["distance"]
+        return {"band_mean": 1.0, "band_sd": 0.0, "band_lo": 1.0, "band_hi": 1.0, "gamma": gamma}
+    if haiku_sims is None:
+        raise ValueError("self_band requires per-pair haiku_sims")
+    haiku_sims = list(haiku_sims)
+    if len(haiku_sims) != len(pairs):
+        raise ValueError(
+            f"haiku_sims has {len(haiku_sims)} values but there are {len(pairs)} intra-author pairs"
+        )
+    sims = [
+        combined_score(a, b, haiku_sims[i], weights, stats, gamma, alpha, beta)
         for i, (a, b) in enumerate(pairs)
     ]
-    if gamma is None:
-        gamma = median_gamma(dists)
-    sims = [rbf(d, gamma) for d in dists]
     m = _mean(sims)
     sd = _pop_sd(sims)
     return {
@@ -311,18 +381,29 @@ def _parse_floats(csv: Optional[str]) -> Optional[List[float]]:
     return [float(x) for x in csv.split(",") if x.strip()]
 
 
+def _uniform_weights() -> Dict[str, float]:
+    return {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(description="SWS stylometry engine")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--vector", metavar="TEXT")
     g.add_argument("--distance", nargs=2, metavar=("A_JSON", "B_JSON"))
     g.add_argument("--fit-weights", nargs=2, metavar=("POS_JSON", "NEG_JSON"))
+    g.add_argument("--fit-mix", nargs=2, metavar=("POS_JSON", "NEG_JSON"))
+    g.add_argument("--score", nargs=2, metavar=("A_JSON", "B_JSON"))
     g.add_argument("--rbf", type=float, metavar="D")
     g.add_argument("--self-band", metavar="VECS_JSON")
     p.add_argument("--weights", metavar="W_JSON")
     p.add_argument("--haiku-sim", type=float, default=1.0)
+    p.add_argument("--haiku-sims", metavar="CSV")
     p.add_argument("--gamma", type=float)
+    p.add_argument("--alpha", type=float)
+    p.add_argument("--beta", type=float)
     p.add_argument("--lam", type=float, default=0.3)
+    p.add_argument("--clip-lo", type=float, default=0.4)
+    p.add_argument("--clip-hi", type=float, default=2.5)
     p.add_argument("--pos-haiku")
     p.add_argument("--neg-haiku")
     args = p.parse_args(argv)
@@ -337,15 +418,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         fitted_stats = None
         if args.weights:
             wd = _load(args.weights)
-            weights, w_h = wd["weights"], wd.get("w_h", 0.0)
+            weights = wd["weights"]
             fitted_stats = _stats_from_weights(wd)
         else:
-            weights = {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
-            w_h = 0.0
+            weights = _uniform_weights()
         # Reuse the fitted standardization basis when present so per-round
         # distances stay comparable; otherwise fall back to recompute (D8).
         stats = fitted_stats if fitted_stats is not None else standardization_stats([a, b])
-        print(json.dumps(weighted_distance(a, b, weights, w_h, args.haiku_sim, stats)))
+        print(json.dumps(weighted_distance(a, b, weights, stats)))
         return 0
 
     if args.fit_weights is not None:
@@ -353,13 +433,46 @@ def main(argv: Optional[List[str]] = None) -> int:
         neg = _to_pairs(_load(args.fit_weights[1]))
         res = fit_fisher_weights(
             pos, neg, lam=args.lam,
-            pos_haiku=_parse_floats(args.pos_haiku),
-            neg_haiku=_parse_floats(args.neg_haiku),
+            clip_lo=args.clip_lo, clip_hi=args.clip_hi,
         )
         # stats are not JSON-serialisable as tuples by default; convert.
-        res_out = {"weights": res["weights"], "w_h": res["w_h"],
+        res_out = {"weights": res["weights"],
                    "stats": {k: list(v) for k, v in res["stats"].items()}}
         print(json.dumps(res_out))
+        return 0
+
+    if args.fit_mix is not None:
+        pos = _to_pairs(_load(args.fit_mix[0]))
+        neg = _to_pairs(_load(args.fit_mix[1]))
+        if not args.weights:
+            raise SystemExit("--fit-mix requires --weights W_JSON")
+        wd = _load(args.weights)
+        weights = wd["weights"]
+        stats = _stats_from_weights(wd) or standardization_stats(
+            [v for pr in pos + neg for v in pr]
+        )
+        res = fit_channel_mix(
+            pos, neg,
+            pos_haiku=_parse_floats(args.pos_haiku) or [],
+            neg_haiku=_parse_floats(args.neg_haiku) or [],
+            weights=weights, stats=stats,
+        )
+        print(json.dumps(res))
+        return 0
+
+    if args.score is not None:
+        a = _load(args.score[0])
+        b = _load(args.score[1])
+        if not args.weights:
+            raise SystemExit("--score requires --weights W_JSON")
+        wd = _load(args.weights)
+        weights = wd["weights"]
+        stats = _stats_from_weights(wd) or standardization_stats([a, b])
+        if args.gamma is None or args.alpha is None or args.beta is None:
+            raise SystemExit("--score requires --gamma, --alpha, --beta")
+        s = combined_score(a, b, args.haiku_sim, weights, stats,
+                           args.gamma, args.alpha, args.beta)
+        print(json.dumps({"score": s}))
         return 0
 
     if args.rbf is not None:
@@ -371,13 +484,22 @@ def main(argv: Optional[List[str]] = None) -> int:
         vecs = _load(getattr(args, "self_band"))
         if args.weights:
             wd = _load(args.weights)
-            weights, w_h = wd["weights"], wd.get("w_h", 0.0)
+            weights = wd["weights"]
+            fitted_stats = _stats_from_weights(wd)
         else:
-            weights = {k: 1.0 / len(FEATURE_ORDER) for k in FEATURE_ORDER}
-            w_h = 0.0
-        fitted_stats = _stats_from_weights(wd) if args.weights else None
+            weights = _uniform_weights()
+            fitted_stats = None
         stats = fitted_stats if fitted_stats is not None else standardization_stats(vecs)
-        print(json.dumps(self_band(vecs, weights, w_h, stats, gamma=args.gamma)))
+        if args.gamma is None or args.alpha is None or args.beta is None:
+            raise SystemExit("--self-band requires --gamma, --alpha, --beta")
+        haiku_sims = _parse_floats(args.haiku_sims)
+        if haiku_sims is None:
+            raise SystemExit("--self-band requires --haiku-sims CSV")
+        print(json.dumps(self_band(
+            vecs, weights, stats,
+            gamma=args.gamma, alpha=args.alpha, beta=args.beta,
+            haiku_sims=haiku_sims,
+        )))
         return 0
 
     return 2

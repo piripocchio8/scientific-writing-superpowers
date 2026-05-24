@@ -47,7 +47,12 @@ class TestKernel(unittest.TestCase):
         author = [_vec(hedge_density=1.0), _vec(hedge_density=1.2), _vec(hedge_density=0.9)]
         stats = sm.standardization_stats(author)
         weights = {k: (1.0 if k == "hedge_density" else 0.0) for k in sm.FEATURE_ORDER}
-        band = sm.self_band(author, weights=weights, w_h=0.0, stats=stats)
+        # 3 vectors -> 3 intra-author pairs -> 3 supplied per-pair haiku sims.
+        haiku_sims = [0.88, 0.82, 0.90]
+        band = sm.self_band(
+            author, weights=weights, stats=stats,
+            gamma=0.5, alpha=0.6, beta=0.4, haiku_sims=haiku_sims,
+        )
         for key in ["band_mean", "band_sd", "band_lo", "band_hi"]:
             self.assertIn(key, band)
         self.assertLessEqual(band["band_lo"], band["band_mean"])
@@ -57,9 +62,22 @@ class TestKernel(unittest.TestCase):
         author = [_vec(hedge_density=1.0), _vec(hedge_density=1.2)]
         stats = sm.standardization_stats(author)
         weights = {k: (1.0 if k == "hedge_density" else 0.0) for k in sm.FEATURE_ORDER}
-        band = sm.self_band(author, weights=weights, w_h=0.0, stats=stats)
+        band = sm.self_band(
+            author, weights=weights, stats=stats,
+            gamma=0.5, alpha=0.6, beta=0.4, haiku_sims=[0.85],
+        )
         self.assertGreaterEqual(band["band_mean"], 0.0)
         self.assertLessEqual(band["band_mean"], 1.0)
+
+    def test_self_band_requires_matching_haiku_sims(self):
+        author = [_vec(hedge_density=1.0), _vec(hedge_density=1.2), _vec(hedge_density=0.9)]
+        stats = sm.standardization_stats(author)
+        weights = {k: (1.0 if k == "hedge_density" else 0.0) for k in sm.FEATURE_ORDER}
+        with self.assertRaises(ValueError):
+            sm.self_band(
+                author, weights=weights, stats=stats,
+                gamma=0.5, alpha=0.6, beta=0.4, haiku_sims=[0.85],  # need 3, gave 1
+            )
 
     def test_keep_best_is_monotone(self):
         hist = [(1, 0.40), (2, 0.55), (3, 0.50), (4, 0.60)]
@@ -98,9 +116,8 @@ class TestKernel(unittest.TestCase):
             )
         res = json.loads(out)
         self.assertIn("weights", res)
-        self.assertIn("w_h", res)
-        total = sum(res["weights"].values()) + res["w_h"]
-        self.assertAlmostEqual(total, 1.0, places=6)
+        self.assertNotIn("w_h", res)
+        self.assertAlmostEqual(sum(res["weights"].values()), 1.0, places=5)
 
     def test_cli_distance_reuses_fitted_stats(self):
         """--distance must use the `stats` in the weights JSON, NOT recompute
@@ -110,16 +127,16 @@ class TestKernel(unittest.TestCase):
         weights = {k: (1.0 if k == "hedge_density" else 0.0) for k in sm.FEATURE_ORDER}
         # A fitted basis with a wider sd than the 2-vector input basis would give.
         fitted_stats = {k: [0.0, 4.0] for k in sm.FEATURE_ORDER}
-        wjson = {"weights": weights, "w_h": 0.0,
+        wjson = {"weights": weights,
                  "stats": {k: list(v) for k, v in fitted_stats.items()}}
 
         expected_fitted = sm.weighted_distance(
-            a, b, weights, 0.0, 1.0,
+            a, b, weights,
             {k: tuple(v) for k, v in fitted_stats.items()},
         )["distance"]
         recompute_stats = sm.standardization_stats([a, b])
         expected_recompute = sm.weighted_distance(
-            a, b, weights, 0.0, 1.0, recompute_stats,
+            a, b, weights, recompute_stats,
         )["distance"]
         # The two paths must genuinely differ, else the test proves nothing.
         self.assertNotAlmostEqual(expected_fitted, expected_recompute, places=6)
