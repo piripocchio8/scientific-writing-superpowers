@@ -158,6 +158,32 @@ locked_decisions:
     (4) "kernel function more than just a vector" -> RBF wrap for bounded, smooth, drift-tolerant similarity. The earlier
     hand-set 0.5/0.5 blend is DROPPED — the blend is now learned.
 
+  D8_CORRECTION: |
+    SUPERSEDES the D8 single-distance fold, after a real-Haiku + real-drafter validation run (2026-05-24).
+    The original design folded the Haiku term INTO the squared distance as a LINEAR w_h*(1-sim) while FITTING it as
+    SQUARED (1-sim)^2, never standardized it, and applied no per-term weight clipping. In practice this made the blended
+    score ANTI-CORRELATE with voice (a real-Haiku-judged off-voice draft scored 0.42 voice but "passed" the band; a
+    better-voiced draft at 0.68 failed it because fw_and dominated the distance).
+    CORRECTED metric (validated; tracks voice; single gate suffices):
+      - Combine at the SIMILARITY level, not the distance level:  S = alpha * k_stylo + beta * haiku_sim,  both in [0,1].
+        k_stylo = exp(-gamma * SUM_i w_i (z_i(x) - z_i(y))^2) over CLIPPED stylometric weights; haiku_sim is the real-Haiku
+        voice score. This resolves the squared-vs-linear / unit-mismatch ("dimensional burden") of folding into one distance.
+      - alpha/beta are FIT from each channel's same-vs-different-author separation (data-driven). On the validation corpus
+        beta ~ 0.70 (Haiku is the stronger channel) — the old fold buried it at w_h ~ 0.12.
+      - Per-term clipping: each stylometric weight clipped to [0.4u, 2.5u] (u = 1/n_features), iterated renormalize — no
+        single feature (e.g. fw_and) can dominate. (User: keep per-term contribution within an interval.)
+      - Enriched baseline: POSITIVE = same-author (author papers + peer-self pairs); NEGATIVE = different-author
+        (author x peer + peer x peer). Makes it a proper authorship metric so the author is judged on the same footing as
+        peers, not held to a stricter standard. Peers = external same-subfield groups, never collaborators/aspirational
+        co-authors/own lab. (User fairness point.)
+      - Self-band computed with combined_score over author-self pairs (Haiku included), so band and candidate share one axis.
+      - Single combined gate (S in band). The dual-gate idea was considered and NOT needed: fitting the channels honestly
+        removed the anti-correlation right away. Real Haiku is REQUIRED for the Haiku channel; as a constant it collapses
+        (beta -> 0), so production sets beta=0 (stylometric-only) explicitly rather than feeding a constant.
+    Implemented in scripts/sws_stylometry.py (fit_fisher_weights clipping; fit_channel_mix; combined_score; self_band) with
+    TDD incl. an anti-correlation ordering regression. See references/stylometry-features.md and the style-calibration guide.
+    Rationale: user instructions 2026-05-24 + the real-Haiku validation evidence.
+
   D8a: |
     Fisher weight fitting. Boundary conditions:
       POSITIVE pairs = (author paper, author paper)  -> distance should be SMALL ("this is me").
