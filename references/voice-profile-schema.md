@@ -29,9 +29,21 @@ feature_targets:
 convergence:
   self_band: [0.74, 0.91]
   gamma: 0.42
+  alpha: 0.58   # stylometric-channel weight (clipped-Fisher k_stylo)
+  beta: 0.42    # Haiku-channel weight; alpha + beta = 1
 sections: [global, introduction, results, discussion, methods, abstract]
 ---
 ```
+
+`self_band` is the band over the COMBINED score `S = alpha*k_stylo +
+beta*haiku_sim` across same-author pairs, not a single-channel similarity. `alpha`
+/ `beta` are the fitted channel mix (see `references/stylometry-features.md`): the
+stylometric channel uses clipped Fisher weights over standardized squared feature
+differences wrapped in the RBF kernel; the Haiku channel is a real Haiku judge's
+voice similarity. A constant Haiku value collapses that channel, so `beta -> 0` and
+the score reduces to the stylometric kernel — a real judge is required. The
+baseline is enriched (same-author incl. peer-self vs different-author incl.
+peer×peer) so the mix is fitted on a robust separation.
 
 `feature_targets` keys are a subset of `FEATURE_ORDER` (the 7 stylometric
 features; function-word freqs are summarized in prose, not pinned numerically).
@@ -75,6 +87,6 @@ Absent `_voice/profile.md` -> agents behave exactly as today (graceful degrade).
 
 - `_voice/field-profile.md` — one-shot subfield conventions (D5; no per-section breakdown).
 - `_voice/style-evolution.md` — diachronic feature x year/era table + reading (D7).
-- `_voice/sources.json` — `[{zotero_key, title, year, author_position, has_pdf, role: train|heldout, recency_weight}]` + fitted weights snapshot + gamma + self-band.
+- `_voice/sources.json` — `[{zotero_key, title, year, author_position, has_pdf, role: train|heldout, recency_weight}]` + fitted clipped-weights snapshot + channel mix `{alpha, beta, gamma}` + self-band.
 - `_voice/convergence.md` — per round, per section: distance, RBF sim, Haiku median, what changed, why, seed prompt + candidate text (D11).
 - `_voice/_archive/` — prior `profile.md` versions, timestamped, on re-run.

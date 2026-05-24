@@ -7,9 +7,9 @@
 #
 # Step  1: fixtures present
 # Step  2: --vector emits the 17-key feature vector
-# Step  3: --fit-weights emits weights + w_h summing to 1
-# Step  4: --self-band emits a band on the author vectors
-# Step  5: --distance heldout-vs-author + --rbf similarity in [0,1]
+# Step  3: --fit-weights emits clipped stylometric weights summing to 1
+# Step  4: --self-band emits a band on the author vectors (combined channels)
+# Step  5: --fit-mix + --score produce a combined voice score in [0,1]
 # Step  6: keep-best monotonicity (held-out improves toward the band)
 # Step  7: a written profile.md passes the schema validator
 # Step  8: prelude exports VOICE_PROFILE when _voice/profile.md present
@@ -51,9 +51,9 @@ NKEYS="$(printf '%s' "$VEC" | "$PYBIN" -c 'import json,sys; print(len(json.load(
 if [[ "$NKEYS" -eq 17 ]]; then ok; else ko "expected 17 keys, got $NKEYS"; fi
 
 # ---------------------------------------------------------------------------
-# Step 3: --fit-weights -> weights + w_h sum to 1
+# Step 3: --fit-weights -> clipped stylometric weights sum to 1, within band
 # ---------------------------------------------------------------------------
-step 3 "--fit-weights emits normalized weights (sum + w_h == 1)"
+step 3 "--fit-weights emits clipped stylometric weights (sum == 1, within band)"
 "$PYBIN" - "$FX" "$TMP" <<'PY'
 import sys, json, itertools, pathlib
 sys.path.insert(0, "scripts")
@@ -66,15 +66,15 @@ neg = [[a, f] for a in author for f in field]
 (tmp / "pos.json").write_text(json.dumps([[a,b] for a,b in pos]))
 (tmp / "neg.json").write_text(json.dumps(neg))
 PY
-WJSON="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --fit-weights "$TMP/pos.json" "$TMP/neg.json" --lam 0.3 --pos-haiku 0.9,0.9,0.9 --neg-haiku 0.2,0.2,0.2,0.2,0.2,0.2)"
+WJSON="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --fit-weights "$TMP/pos.json" "$TMP/neg.json" --lam 0.3 --clip-lo 0.4 --clip-hi 2.5)"
 printf '%s' "$WJSON" > "$TMP/weights.json"
-SUM_OK="$(printf '%s' "$WJSON" | "$PYBIN" -c 'import json,sys; d=json.load(sys.stdin); print("1" if abs(sum(d["weights"].values())+d["w_h"]-1.0)<1e-6 else "0")')"
-if [[ "$SUM_OK" == "1" ]]; then ok; else ko "weights+w_h do not sum to 1"; fi
+SUM_OK="$(printf '%s' "$WJSON" | "$PYBIN" -c 'import json,sys; d=json.load(sys.stdin); w=d["weights"]; u=1.0/len(w); s=abs(sum(w.values())-1.0)<1e-6; band=all(0.4*u-1e-3<=v<=2.5*u+1e-3 for v in w.values()); print("1" if s and band and "w_h" not in d else "0")')"
+if [[ "$SUM_OK" == "1" ]]; then ok; else ko "clipped weights invalid: $WJSON"; fi
 
 # ---------------------------------------------------------------------------
 # Step 4: --self-band on author vectors
 # ---------------------------------------------------------------------------
-step 4 "--self-band emits band_lo<=band_mean<=band_hi in [0,1]"
+step 4 "--self-band emits band_lo<=band_mean<=band_hi in [0,1] (combined channels)"
 "$PYBIN" - "$FX" "$TMP" <<'PY'
 import sys, json, pathlib
 sys.path.insert(0, "scripts")
@@ -83,22 +83,24 @@ fx, tmp = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 author = [sm.feature_vector((fx / f"author_{i}.txt").read_text()) for i in (1,2,3)]
 (tmp / "author_vecs.json").write_text(json.dumps(author))
 PY
-BAND="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --self-band "$TMP/author_vecs.json" --weights "$TMP/weights.json")"
+# 3 author vectors -> 3 intra-author pairs -> 3 supplied per-pair Haiku sims.
+HSTUB="${SWS_HAIKU_STUB:-0.8}"
+BAND="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --self-band "$TMP/author_vecs.json" --weights "$TMP/weights.json" --alpha 0.6 --beta 0.4 --gamma 0.5 --haiku-sims "$HSTUB,$HSTUB,$HSTUB")"
 BAND_OK="$(printf '%s' "$BAND" | "$PYBIN" -c 'import json,sys; b=json.load(sys.stdin); print("1" if 0.0<=b["band_lo"]<=b["band_mean"]<=b["band_hi"]<=1.0001 else "0")')"
 if [[ "$BAND_OK" == "1" ]]; then ok; else ko "band invariants violated: $BAND"; fi
 
 # ---------------------------------------------------------------------------
-# Step 5: --distance heldout-vs-author then --rbf similarity in [0,1]
+# Step 5: --fit-mix then --score produce a combined voice score in [0,1]
 # ---------------------------------------------------------------------------
-step 5 "--distance + --rbf produce a similarity in [0,1] (Haiku stubbed)"
+step 5 "--fit-mix + --score produce a combined voice score in [0,1] (Haiku stubbed)"
 HAIKU_SIM="${SWS_HAIKU_STUB:-0.8}"
+MIX="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --fit-mix "$TMP/pos.json" "$TMP/neg.json" --weights "$TMP/weights.json" --pos-haiku 0.9,0.9,0.9 --neg-haiku 0.2,0.2,0.2,0.2,0.2,0.2)"
+read -r ALPHA BETA GAMMA <<<"$(printf '%s' "$MIX" | "$PYBIN" -c 'import json,sys; m=json.load(sys.stdin); print(m["alpha"], m["beta"], m["gamma"])')"
 "$PYBIN" "$REPO/scripts/sws_stylometry.py" --vector "$(cat "$FX/heldout_1.txt")" > "$TMP/heldout.json"
 "$PYBIN" "$REPO/scripts/sws_stylometry.py" --vector "$(cat "$FX/author_1.txt")" > "$TMP/a1.json"
-DJSON="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --distance "$TMP/heldout.json" "$TMP/a1.json" --weights "$TMP/weights.json" --haiku-sim "$HAIKU_SIM")"
-DVAL="$(printf '%s' "$DJSON" | "$PYBIN" -c 'import json,sys; print(json.load(sys.stdin)["distance"])')"
-SIM="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --rbf "$DVAL" --gamma 0.5)"
-SIM_OK="$(printf '%s' "$SIM" | "$PYBIN" -c 'import json,sys; s=json.load(sys.stdin)["similarity"]; print("1" if 0.0<=s<=1.0 else "0")')"
-if [[ "$SIM_OK" == "1" ]]; then ok; else ko "rbf similarity out of [0,1]: $SIM"; fi
+SCORE="$("$PYBIN" "$REPO/scripts/sws_stylometry.py" --score "$TMP/heldout.json" "$TMP/a1.json" --weights "$TMP/weights.json" --haiku-sim "$HAIKU_SIM" --alpha "$ALPHA" --beta "$BETA" --gamma "$GAMMA")"
+SIM_OK="$(printf '%s' "$SCORE" | "$PYBIN" -c 'import json,sys; s=json.load(sys.stdin)["score"]; print("1" if 0.0<=s<=1.0 else "0")')"
+if [[ "$SIM_OK" == "1" ]]; then ok; else ko "combined score out of [0,1]: $SCORE (mix=$MIX)"; fi
 
 # ---------------------------------------------------------------------------
 # Step 6: keep-best monotonicity

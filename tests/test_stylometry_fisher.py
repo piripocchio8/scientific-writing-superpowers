@@ -1,5 +1,8 @@
-"""Fisher-weight fitting tests (D8a): recover a KNOWN separation, constraints,
-regularization, and the w_h Haiku term fitted alongside feature weights."""
+"""Fisher-weight fitting tests (D8a + voice-metric correction): recover a KNOWN
+separation, constraints, regularization, and per-term CLIPPING of the now
+stylometric-only weights. The Haiku term is no longer fitted in this function;
+it is handled at the similarity level by fit_channel_mix (see
+test_stylometry_channel.py)."""
 from __future__ import annotations
 
 import sys
@@ -47,16 +50,47 @@ class TestFisherFit(unittest.TestCase):
         res = sm.fit_fisher_weights(pos, neg, lam=0.3)
         for v in res["weights"].values():
             self.assertGreaterEqual(v, 0.0)
-        self.assertGreaterEqual(res["w_h"], 0.0)
 
-    def test_weights_plus_wh_sum_to_one(self):
+    def test_weights_sum_to_one(self):
         author = [_vec(hedge_density=1.0), _vec(hedge_density=1.1)]
         field = [_vec(hedge_density=9.0)]
         pos = [(author[0], author[1])]
         neg = [(author[0], field[0]), (author[1], field[0])]
         res = sm.fit_fisher_weights(pos, neg, lam=0.3)
-        total = sum(res["weights"].values()) + res["w_h"]
-        self.assertAlmostEqual(total, 1.0, places=9)
+        self.assertAlmostEqual(sum(res["weights"].values()), 1.0, places=6)
+
+    def test_weights_respect_clip_band(self):
+        # Without clipping, fw_and-style features can run away; assert every
+        # normalized weight stays inside [clip_lo*u, clip_hi*u].
+        author = [
+            _vec(hedge_density=1.0, fw_and=0.10),
+            _vec(hedge_density=1.05, fw_and=0.101),
+            _vec(hedge_density=0.95, fw_and=0.099),
+        ]
+        field = [_vec(hedge_density=9.0, fw_and=0.01), _vec(hedge_density=8.5, fw_and=0.02)]
+        pos = [(author[0], author[1]), (author[1], author[2]), (author[0], author[2])]
+        neg = [(a, f) for a in author for f in field]
+        clip_lo, clip_hi = 0.4, 2.5
+        res = sm.fit_fisher_weights(pos, neg, lam=0.3, clip_lo=clip_lo, clip_hi=clip_hi)
+        u = 1.0 / len(sm.FEATURE_ORDER)
+        # The clip+renormalize loop ends on a renormalize, so the converged
+        # fixed point sits within a tiny floating-point tolerance of the band.
+        tol = 1e-3
+        for k, v in res["weights"].items():
+            self.assertGreaterEqual(v, clip_lo * u - tol, f"{k} below floor")
+            self.assertLessEqual(v, clip_hi * u + tol, f"{k} above ceiling")
+        self.assertAlmostEqual(sum(res["weights"].values()), 1.0, places=9)
+
+    def test_clip_prevents_runaway_dominance(self):
+        # A feature that separates perfectly would otherwise grab almost all the
+        # mass; the ceiling caps it at clip_hi*u.
+        author = [_vec(fw_and=0.10), _vec(fw_and=0.10), _vec(fw_and=0.10)]
+        field = [_vec(fw_and=0.50), _vec(fw_and=0.50)]
+        pos = [(author[0], author[1]), (author[1], author[2]), (author[0], author[2])]
+        neg = [(a, f) for a in author for f in field]
+        res = sm.fit_fisher_weights(pos, neg, lam=0.0, clip_hi=2.5)
+        u = 1.0 / len(sm.FEATURE_ORDER)
+        self.assertLessEqual(res["weights"]["fw_and"], 2.5 * u + 1e-3)
 
     def test_lambda_one_gives_uniform_weights(self):
         author = [_vec(hedge_density=1.0), _vec(hedge_density=1.1)]
@@ -64,7 +98,7 @@ class TestFisherFit(unittest.TestCase):
         pos = [(author[0], author[1])]
         neg = [(author[0], field[0]), (author[1], field[0])]
         res = sm.fit_fisher_weights(pos, neg, lam=1.0)
-        vals = list(res["weights"].values()) + [res["w_h"]]
+        vals = list(res["weights"].values())
         for v in vals:
             self.assertAlmostEqual(v, vals[0], places=9)
 
@@ -78,38 +112,36 @@ class TestFisherFit(unittest.TestCase):
         for v in res["weights"].values():
             self.assertTrue(v == v and abs(v) != float("inf"))  # not nan/inf
 
-    def test_wh_high_when_haiku_separates(self):
-        # Haiku similarity: positive pairs ~0.95 (close), negative ~0.2 (far).
-        author = [_vec(hedge_density=1.0), _vec(hedge_density=1.0)]
-        field = [_vec(hedge_density=1.0)]
+    def test_no_w_h_in_fit_output(self):
+        # The Haiku channel is intentionally removed from fit_fisher_weights.
+        author = [_vec(hedge_density=1.0), _vec(hedge_density=1.1)]
+        field = [_vec(hedge_density=9.0)]
         pos = [(author[0], author[1])]
         neg = [(author[0], field[0])]
-        res = sm.fit_fisher_weights(
-            pos, neg, lam=0.0,
-            pos_haiku=[0.95], neg_haiku=[0.2],
-        )
-        # Features don't separate (all hedge=1), Haiku does -> w_h dominates.
-        self.assertGreater(res["w_h"], max(res["weights"].values()))
+        res = sm.fit_fisher_weights(pos, neg)
+        self.assertNotIn("w_h", res)
+        self.assertIn("weights", res)
+        self.assertIn("stats", res)
 
-    def test_distance_uses_weights_and_haiku_term(self):
+    def test_distance_is_stylometric_only(self):
+        # weighted_distance no longer takes w_h / haiku_sim: equal vectors -> 0.
         a = _vec(hedge_density=1.0)
         b = _vec(hedge_density=1.0)
         stats = sm.standardization_stats([a, b])
-        # equal vectors, haiku_sim 0.5 -> distance = w_h * 0.5
-        weights = {k: 0.0 for k in sm.FEATURE_ORDER}
-        d = sm.weighted_distance(a, b, weights=weights, w_h=0.4,
-                                 haiku_sim=0.5, stats=stats)
-        self.assertAlmostEqual(d["distance"], 0.4 * 0.5, places=9)
+        weights = {k: 1.0 / len(sm.FEATURE_ORDER) for k in sm.FEATURE_ORDER}
+        d = sm.weighted_distance(a, b, weights=weights, stats=stats)
+        self.assertAlmostEqual(d["distance"], 0.0, places=9)
 
     def test_per_feature_contrib_keys(self):
         a = _vec(hedge_density=2.0)
         b = _vec(hedge_density=0.0)
         stats = sm.standardization_stats([a, b])
         weights = {k: (1.0 if k == "hedge_density" else 0.0) for k in sm.FEATURE_ORDER}
-        d = sm.weighted_distance(a, b, weights=weights, w_h=0.0,
-                                 haiku_sim=1.0, stats=stats)
+        d = sm.weighted_distance(a, b, weights=weights, stats=stats)
         self.assertIn("hedge_density", d["per_feature_contrib"])
         self.assertGreater(d["per_feature_contrib"]["hedge_density"], 0.0)
+        # No Haiku term leaks into the per-feature contributions anymore.
+        self.assertNotIn("_haiku", d["per_feature_contrib"])
 
 
 if __name__ == "__main__":

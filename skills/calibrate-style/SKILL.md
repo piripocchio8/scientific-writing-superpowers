@@ -20,8 +20,10 @@ Build the author's voice profile from their own papers, with an objective stoppi
 
 - `epsilon = 0.05` (5% relative improvement — below this counts as a plateau)
 - `max_rounds N = 4` per section type
-- `lambda = 0.3` (Fisher shrink-to-uniform)
-- Haiku scoring: x3 calls, low temperature, take the median (D9)
+- `lambda = 0.3` (Fisher shrink-to-uniform); per-term weight clip `[0.4u, 2.5u]` (`u = 1/n_features`) so no single feature dominates
+- Two-channel score `S = alpha*k_stylo + beta*haiku_sim`; `alpha/beta` fit from each channel's same-vs-different-author separation. Single combined gate (S enters the self-band).
+- Haiku scoring: a REAL Haiku judge, x3 calls, low temperature, median (D9). The Haiku channel is meaningless as a constant — if no real judge is available, the agent sets `beta=0` (stylometric-only) explicitly. `SWS_HAIKU_STUB` is tests-only.
+- Baseline: same-author (your papers + peer-self) vs different-author (you×peer + peer×peer); peers are external same-subfield groups, never your collaborators or lab.
 
 ## Steps
 
