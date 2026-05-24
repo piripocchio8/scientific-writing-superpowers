@@ -33,7 +33,7 @@ A typical lifecycle, with the slash command at each step (run them as you need �
 |---|---|---|
 | **Set up** | `/sws:init-project` · `/sws:install-deps` | Scaffold the folder topology, marker file, and per-paper memory; bootstrap a project-local Python venv. |
 | **Frame** | `/sws:set-profile` · `/sws:resolve-journal-style` · `/sws:resolve-call-rules` | Pick one of 9 writing-context profiles; layer the target journal's guide-for-authors (or a funding call's rules) as a constraints overlay. |
-| **Find your voice** | `/sws:calibrate-style` | Learn your personal voice from your own papers → a reusable `_voice/` profile the drafter and reviser consume. See the [voice guide](references/style-calibration-guide.md). |
+| **Find your voice** | `/sws:calibrate-style` | Learn your personal voice from your own papers → a reusable `_voice/` profile the drafter and reviser consume. See the [voice-calibration methodology](docs/voice-calibration-methodology.md). |
 | **Gather literature** | `/sws:search-literature` · `/sws:prepare-lit-context` | Discover relevant sources (Zotero-first, then PubMed / Semantic Scholar). |
 | **Outline & draft** | `/sws:outline-paper` · `/sws:draft-section` · `/sws:draft-paper` | Build the section architecture, then draft in your voice within the resolved constraints. |
 | **Data & figures** | `/sws:curate-data` · `/sws:make-figure` | Ingest spreadsheet data (fail-loud on un-cached formulae), generate publication figures sized to the journal with a readability check (≥8 pt fonts, column-fit widths). |
@@ -59,7 +59,7 @@ The roster is fixed by design; external tools are reached the cheap way (CLI/HTT
 
 ## Featured capabilities
 
-- **Author voice calibration** — an iterative, held-out loop fits a Fisher-weighted stylometric metric (+ an optional Haiku voice-similarity term, wrapped in an RBF kernel) and refines a voice profile until generated prose is as similar to a held-out paper as your own papers are to each other. Read the method, a worked example with the fitted weights, and the convergence trajectory in the [**style-calibration guide**](references/style-calibration-guide.md).
+- **Author voice calibration** — an iterative, held-out loop that scores generated prose with a **two-channel metric** (a clipped stylometric kernel plus a real-Haiku voice judge, combined at the similarity level) and refines a voice profile until the prose lands in the author's own self-similarity band. The full method, the dogfooding that exposed and corrected an anti-correlation, the fitted weights, and the convergence statistics are in the [**voice-calibration methodology**](docs/voice-calibration-methodology.md).
 - **Figure readability** — `make-figure` enforces a font floor (≥8 pt) and journal column widths (single ≈7.5 cm, double 12–16 cm), with an opt-in vision pass on the rendered figure.
 - **Profiles + overlays** — 9 writing-context profiles, each refined by a journal-style or funding-call overlay resolved into the project.
 - **Cycle memory** — a `passport.json` written after each cycle and reloaded at session start; a filesystem index to avoid repeated scans.
@@ -99,7 +99,7 @@ The roster is fixed by design; external tools are reached the cheap way (CLI/HTT
 
 ## Documentation
 
-- [Calibrating an author's voice](references/style-calibration-guide.md) — how `/sws:calibrate-style` learns a writer's voice (the Fisher-weighted stylometric metric + self-similarity band), a worked example with the fitted weights, the convergence trajectory, and what to expect. Useful whether you want to *use* voice calibration or *contribute* to it.
+- [Author-voice calibration: method, validation, and correction](docs/voice-calibration-methodology.md) — the two-channel metric (clipped stylometric kernel + real-Haiku judge), the dogfooding that exposed and fixed an anti-correlation, the fitted weights, the convergence statistics, limitations, and a verified bibliography. Written end-to-end with SWS's own agents. Useful whether you want to *use* voice calibration or *contribute* to it.
 - [Architecture sketch](docs/superpowers/specs/2026-05-08-architecture-sketch-design.md) — the full v0.1 design and the cycle roadmap.
 
 ## Contributing
