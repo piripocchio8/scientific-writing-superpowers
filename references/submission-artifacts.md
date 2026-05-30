@@ -44,16 +44,16 @@ reviewer_comments_accepted_shapes:
       R2.1: Section 4.2 needs clarification.
 
 response_matrix_schema:
-  type: list of comment objects
+  type: "list of comment objects"
   comment_fields:
     id: "R<reviewer>.<comment>; e.g. R1.2"
-    reviewer: int
-    text: string (verbatim reviewer comment)
-    severity_inferred: enum [major, minor, suggestion]; inferred from keywords
-    status: enum [pending, accepted, partial, rejected]; default pending
-    response_text: string; agent fills
-    edits_made: list of strings (each entry: section + edit description); agent fills
-    line_refs: list of "file:line" pointers into _drafts/ or final .docx; agent fills
+    reviewer: "int"
+    text: "string (verbatim reviewer comment)"
+    severity_inferred: "enum [major, minor, suggestion]; inferred from keywords"
+    status: "enum [pending, accepted, partial, rejected]; default pending"
+    response_text: "string; agent fills"
+    edits_made: "list of strings (each entry section plus edit description); agent fills"
+    line_refs: "list of file-plus-line pointers into _drafts/ or final .docx; agent fills"
 
 disclosure_templates:
   icmje:
