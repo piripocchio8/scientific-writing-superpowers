@@ -124,6 +124,7 @@ else
 fi
 
 step 10 "Summary"
+if [[ $FAIL -eq 0 ]]; then ok; else ko; fi
 echo
 echo "smoke_cycle_13.sh: $PASS passed, $FAIL failed (10 total)"
 if [[ $FAIL -eq 0 ]]; then
