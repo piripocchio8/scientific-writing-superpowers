@@ -21,6 +21,7 @@ refs_style: numbered
 agents_active: [outline-architect, drafter-flagship, caption-writer, proposal-budget-helper, proposal-compliance-helper, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, style-calibrator, literature-searcher, bibliography-curator]
 agents_inactive:
   - response-to-reviewers
+  - cover-letter-writer        # cycle-12 D8: proposals use proposal-compliance-helper instead
   - methods-writer
   - drafter-fast
   - claim-verifier             # v0.1: proposals contain forward-looking claims by design

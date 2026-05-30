@@ -18,7 +18,7 @@ disclosure_required: true
 cover_letter_required: true
 supplementary_allowed: true
 refs_style: numbered
-agents_active: [outline-architect, drafter-flagship, drafter-fast, methods-writer, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker, style-calibrator, data-curator, plot-maker, literature-searcher, bibliography-curator]
+agents_active: [outline-architect, drafter-flagship, drafter-fast, methods-writer, caption-writer, reviser-full, reviser-fast, humanizer, style-enforcer, consistency-checker, peer-reviewer, claim-verifier, bibliography-fidelity-checker, style-calibrator, data-curator, plot-maker, literature-searcher, bibliography-curator, cover-letter-writer, response-to-reviewers]
 agents_inactive: [proposal-budget-helper, proposal-compliance-helper]
 ---
 
