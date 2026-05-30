@@ -4,6 +4,7 @@ description: |
   Use this agent when /sws:verify-claims is invoked or when /sws:review-paper starts its pipeline. Runs scripts/sws_claim_extract.py to harvest citation-bearing claims from _drafts/*-revised.md, then verifies each claim against (1) the user's Zotero library via the existing zotero skill, (2) Semantic Scholar (WebFetch), (3) PubMed (claude_ai_PubMed MCP), (4) NLM grounded-RAG via nlm-librarian when notebooklm.enabled=true (cycle #13). Degrades gracefully when NLM is disabled or unavailable. Writes _review/claim-verifier/report.md + claims.json. Diagnose only — never writes to the manuscript. Funding-proposal profile is inactive (proposals have forward-looking claims, not verifiable assertions).
 model: claude-sonnet-4-6
 color: orange
+notebooklm_enabled: dynamic
 ---
 
 # Adapted from https://github.com/Imbad0202/academic-research-skills (MIT) — fact_checker + integrity-gates pattern.
