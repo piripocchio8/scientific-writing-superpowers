@@ -115,6 +115,13 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 | `refs/_lit-search/<slug>.md` | literature-searcher output — ranked candidates with metadata + relevance note | 11 |
 | `_review/bibliography-audit/report.md` | bibliography-curator audit report — unresolved DOIs, duplicates, format deviations | 11 |
 | `_review/bibliography-audit/fixes.json` | bibliography-curator proposed fixes — list of `{key, field, old, new, source}` | 11 |
+| `_review/round-<N>/reviewer-comments.md` | USER-PROVIDED reviewer comments in any of three accepted shapes (see `references/submission-artifacts.md` `reviewer_comments_accepted_shapes`). INPUT for `sws_response_matrix.py`. | 12 |
+| `_review/round-<N>/response-matrix.json` | R&R Traceability Matrix — list of comment objects (id, reviewer, text, severity_inferred, status, response_text, edits_made, line_refs). INTERMEDIATE between `sws_response_matrix.py` (writes shell) and the `response-to-reviewers` agent (fills the four agent-controlled fields). Schema in `references/submission-artifacts.md` `response_matrix_schema`. | 12 |
+| `_review/round-<N>/response-to-reviewers.md` | `response-to-reviewers` agent prose output (per-comment table + per-reviewer summary). | 12 |
+| `_review/round-<N>/edits-summary.md` | Optional agent-generated log of concrete edits per comment. | 12 |
+| `_submission/cover-letter.md` | `cover-letter-writer` agent OUTPUT. Venue-specific markdown cover letter; structure in `references/submission-artifacts.md` `cover_letter_canonical_structure`. Editor name is never fabricated (D11). | 12 |
+| `_submission/ai-disclosure.md` | `sws_disclosure_writer.py` OUTPUT. One of four template bodies (ICMJE / Wiley / RSC / ACS) selected from the journal overlay's `disclosure.template_id`. | 12 |
+| `_submission/response-to-reviewers-round-<N>.md` | Mirror of `_review/round-<N>/response-to-reviewers.md` for journal upload. | 12 |
 | `_voice/profile.md` | YAML frontmatter (feature targets per `references/voice-profile-schema.md`) + body: `## Global voice` then `## Section deltas` with `### <Section>` blocks. WRITTEN by style-calibrator; READ by drafter-flagship, drafter-fast, reviser-full, reviser-fast, humanizer via the prelude-exported `$VOICE_PROFILE`. SEPARATE axis from `resolve_overlay.py` (D13). | style-calibrator (write) / 5 consumers (read) |
 | `_voice/field-profile.md` | One-shot subfield conventions (D5; no per-section breakdown, no loop) | style-calibrator |
 | `_voice/style-evolution.md` | Diachronic feature x year/era table + reading (D7) | style-calibrator |
