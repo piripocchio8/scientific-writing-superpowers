@@ -49,6 +49,16 @@ schema:
     valid: [true, false]
     default: false
     when_true_activates: [refs/nlm_uploads/, nlm-librarian agent]
+  notebooklm.notebook_id:
+    required: false
+    type: "string | null"
+    default: null
+    note: configured NotebookLM notebook to query; null = use the upstream CLI's default notebook (cycle #13)
+  notebooklm.cli_path:
+    required: false
+    type: "string | null"
+    default: null
+    note: absolute path to notebooklm-mcp-cli binary; null = PATH discovery (D4, cycle #13)
   created:
     required: true
     type: string
