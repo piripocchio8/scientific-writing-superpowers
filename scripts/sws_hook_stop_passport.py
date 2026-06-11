@@ -2,6 +2,20 @@
 """Stop hook — append a passport.json history entry when files were modified.
 
 Marker-scoped. Idempotent on empty turns (no entry written).
+
+Passport entry schema (cycle-05 D-lock; cycle-12 D4 additive extension):
+    cycle           int   (required) — monotonically increasing
+    timestamp       str   (required) — ISO 8601 UTC, suffix 'Z'
+    agent           str | null
+    file            list[str] | null
+    change_summary  str | null
+    next_step       str | null
+    # cycle-12 D4 additive-optional fields — written by orchestrated steps
+    # (e.g. /sws:run-cycle, /sws:write-cover-letter); the Stop-hook itself
+    # never emits these — older entries without them stay valid.
+    phase           str | null    — plan | draft | revise | review | submit
+    venue           str | null    — slug copied from target_journal
+    round           int | null    — only meaningful when phase == 'submit'
 """
 from __future__ import annotations
 

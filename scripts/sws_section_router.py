@@ -4,7 +4,7 @@ dispatch. Mirrors the tables in skills/draft-section/SKILL.md and
 skills/revise-section/SKILL.md.
 
 The router has two axes:
-  - action: draft (default) | revise | consistency | style | lint | review
+  - action: draft (default) | revise | consistency | style | lint | review | submit
   - profile: publication profile or funding-proposal (applies within action=draft)
 
 The router is profile-aware (publication vs funding-proposal) but does NOT
@@ -95,8 +95,25 @@ _STYLE_WILDCARD = "style-enforcer"
 _LINT_SENTINEL = "script:sws_lint_ai_tells.py"
 _REVIEW_WILDCARD = "peer-reviewer"
 
+# ---------------------------------------------------------------------------
+# action=submit map (cycle-#12, D17)
+# Routes the three cycle-#12 submission artifact ids to skill sentinels. The
+# skill sentinel strings are read by /sws:run-cycle and by any caller that
+# needs to dispatch a submission step from the router.
+# ---------------------------------------------------------------------------
+
+_SUBMIT_MAP = {
+    "cover-letter": "skill:/sws:write-cover-letter",
+    "cover_letter": "skill:/sws:write-cover-letter",
+    "response": "skill:/sws:respond-to-reviewers",
+    "disclosure": "skill:/sws:disclose-ai-usage",
+    "ai-disclosure": "skill:/sws:disclose-ai-usage",
+}
+
 # Valid action values
-_VALID_ACTIONS = frozenset({"draft", "revise", "consistency", "style", "lint", "review"})
+_VALID_ACTIONS = frozenset({
+    "draft", "revise", "consistency", "style", "lint", "review", "submit",
+})
 
 
 def route_section(
@@ -120,6 +137,10 @@ def route_section(
       - ``review``: any section_id → ``peer-reviewer`` (single-section peer
         review only; claim-verifier and bibliography-fidelity-checker are
         paper-wide by nature and not routed per-section).
+      - ``submit``: section_id is the submission-artifact key
+        (``cover-letter`` | ``response`` | ``disclosure``) and the router
+        returns a ``skill:/sws:<name>`` sentinel that callers parse to
+        invoke the matching skill. Unknown submit ids raise ``RouteError``.
 
     section_id is lowercased and stripped before lookup.
 
@@ -146,6 +167,13 @@ def route_section(
 
     if action == "review":
         return _REVIEW_WILDCARD
+
+    if action == "submit":
+        if key not in _SUBMIT_MAP:
+            raise RouteError(
+                f"unknown submit artifact: {section_id!r}; valid: {sorted(set(_SUBMIT_MAP.keys()))}"
+            )
+        return _SUBMIT_MAP[key]
 
     # action == "draft" — cycle-#7 behaviour
     if profile == "funding-proposal":
