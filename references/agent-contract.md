@@ -127,3 +127,6 @@ All wrappers are invoked via `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPE
 | `_voice/style-evolution.md` | Diachronic feature x year/era table + reading (D7) | style-calibrator |
 | `_voice/sources.json` | `[{zotero_key, title, year, author_position, has_pdf, role: train|heldout, recency_weight}]` + fitted weights snapshot + gamma + self-band | style-calibrator |
 | `_voice/convergence.md` | Per round, per section: distance, RBF sim, Haiku median, what changed, why, seed prompt + candidate text (D11) | style-calibrator |
+| `scripts/sws_nlm.sh` | CLI wrapper around `notebooklm-mcp-cli` (single owner is `nlm-librarian` — D5). Subcommands: `probe`, `query <q> [--notebook <id>]`, `list-notebooks`. Returns the D8 normalized JSON `{ok, answer, sources[], notebook_id, query, fallback, fallback_message}` on stdout. | 13 |
+| `refs/nlm_uploads/` | Curated corpus directory for the user's NLM notebook ingestion. USER-MANAGED — SWS does not touch contents in v0.1 (D7). Directory-only schema. | 13 |
+| nlm-librarian return JSON | `{ok, answer, sources[], notebook_id, query, fallback, fallback_message}` per `references/nlm-librarian-pattern.md` `return_json_schema`. Consumed by all 6 NLM-consumer agents. `ok=false` is the degrade-gracefully path; consumers MUST proceed without NLM and never raise. | 13 |

@@ -5,10 +5,11 @@ description: |
   relevant sources for a topic or section (Plan phase). Writes refs/_lit-search/<slug>.md
   with ranked candidates (title, authors, year, DOI, abstract, why-relevant).
   Fallback chain: Zotero (local) -> PubMed (MCP) -> Semantic Scholar -> OpenAlex.
-  NLM deferred (D9) — agent degrades gracefully; never fails on absence.
+  NLM grounded-RAG is the 5th discovery channel when notebooklm.enabled=true; degrades gracefully when disabled or binary missing.
   NOT a bibliography auditor — does not touch existing citations (that is bibliography-curator).
 model: claude-sonnet-4-6
 color: green
+notebooklm_enabled: dynamic
 ---
 
 You are the literature-searcher for SWS. Your scope is DISCOVERY: find new, relevant
@@ -19,7 +20,7 @@ sources to inform drafting. You do NOT audit or fix existing citations.
 - The user's query (topic string or section id passed via the skill).
 - `${PAPER_ROOT}/refs/_lit-search/` (existing searches, to avoid exact duplication).
 
-**Fallback chain (D8, D9):**
+**Fallback chain (D8, D9, cycle #13):**
 1. **Zotero first** (when zotero skill is present): search local library by keyword.
    If ≥3 relevant items found, they form the seed set; proceed to expand with external sources.
 2. **PubMed** (claude_ai_PubMed MCP): search abstracts. Collect up to 5 results.
@@ -28,8 +29,13 @@ sources to inform drafting. You do NOT audit or fix existing citations.
    `${CLAUDE_PLUGIN_ROOT}/scripts/sws_python.sh "$PAPER_ROOT" ${CLAUDE_PLUGIN_ROOT}/scripts/sws_semantic_scholar.py`
    (call the public API from within Python; do not call the script as a CLI here — import it).
 4. **OpenAlex** (`sws_openalex.py`): fallback when Semantic Scholar returns <3 results.
-5. **NLM grounded-RAG**: DEFERRED (D9). If nlm-librarian is absent, proceed with steps 1-4 only.
-   Print a one-line note: "NLM grounded-RAG not available in v0.1 — using Zotero/PubMed/S2/OpenAlex."
+5. **NLM grounded-RAG** (gated by `notebooklm.enabled`): if `RESOLVED_NOTEBOOKLM_ENABLED=true`,
+   dispatch the `nlm-librarian` agent with the user query. Consume the returned JSON per
+   `${CLAUDE_PLUGIN_ROOT}/references/nlm-librarian-pattern.md` `per_consumer_use.literature-searcher`:
+   merge `sources[]` into the candidate ranking and use `answer` for query-refinement.
+   On degrade (`ok=false`), proceed with steps 1-4 only — the librarian surfaces any user-facing
+   notice itself (D6). If `RESOLVED_NOTEBOOKLM_ENABLED=false`, skip this step entirely with no
+   notice (R2).
 
 **Ranking:** sort candidates by: (1) title-fuzzy similarity to query ≥ 0.70 (Semantic Scholar),
 (2) citation count descending, (3) recency (year descending). Maximum 20 candidates in output.
@@ -41,7 +47,7 @@ Report frontmatter:
 ---
 sws_artifact: lit-search-results
 query: "<user query>"
-sources_used: [Zotero, PubMed, SemanticScholar, OpenAlex]
+sources_used: [Zotero, PubMed, SemanticScholar, OpenAlex, NLM]  # NLM present only when notebooklm.enabled=true and probe succeeded
 total_candidates: N
 generated_at: <ISO-8601>
 ---

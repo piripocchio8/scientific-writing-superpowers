@@ -1,0 +1,16 @@
+---
+sws_version: 0.1
+article_type: communication
+language: en
+format: docx
+target_journal: null
+target_call: null
+notebooklm:
+  enabled: __NLM_ENABLED__
+  notebook_id: __NLM_NOTEBOOK_ID__
+  cli_path: null
+profile: communication
+created: 2026-05-30T00:00:00Z
+---
+
+# Cycle-13 fixture project (toggleable notebooklm.enabled)

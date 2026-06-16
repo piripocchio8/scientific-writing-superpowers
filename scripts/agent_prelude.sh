@@ -58,6 +58,9 @@ def safe(v):
     if isinstance(v, bool):
         return "true" if v else "false"
     return str(v)
+nlm = fm.get("notebooklm") or {}
+if not isinstance(nlm, dict):
+    nlm = {}
 fields = {
     "PROFILE_ID": data.get("profile_id"),
     "REF_CAP": fm.get("ref_cap"),
@@ -68,6 +71,10 @@ fields = {
     "DISCLOSURE_REQUIRED": fm.get("disclosure_required"),
     "COVER_LETTER_REQUIRED": fm.get("cover_letter_required"),
     "REFS_STYLE": fm.get("refs_style"),
+    # Cycle-13: notebooklm.* flattened to RESOLVED_NOTEBOOKLM_* env vars.
+    "NOTEBOOKLM_ENABLED": nlm.get("enabled", False),
+    "NLM_NOTEBOOK_ID": nlm.get("notebook_id"),
+    "NLM_CLI_PATH": nlm.get("cli_path"),
 }
 profile_set = bool(data.get("profile_set"))
 should_run = data.get("should_run")

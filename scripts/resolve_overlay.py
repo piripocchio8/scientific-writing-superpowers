@@ -43,6 +43,13 @@ SCHEMA_DEFAULTS = {
     "refs_style": "numbered",
     "agents_active": [],
     "agents_inactive": [],
+    # Cycle-13: NotebookLM consumer-dispatch gate (D9).
+    # Nested dict; agent_prelude.sh flattens to RESOLVED_NOTEBOOKLM_* env vars.
+    "notebooklm": {
+        "enabled": False,
+        "notebook_id": None,
+        "cli_path": None,
+    },
 }
 
 
@@ -183,6 +190,17 @@ def resolve(
                 }
 
     resolved = merge(merge(merge(SCHEMA_DEFAULTS, profile_fm), journal_fm), call_fm)
+
+    # Cycle-13: marker carries notebooklm.* (D9). Pull it in atop the merged
+    # profile/overlay layers so a per-project NLM toggle wins over profile
+    # defaults. Shallow-merge the nested dict so partial overrides (just
+    # `enabled: true`) keep the schema defaults for the other sub-keys.
+    marker_nlm = marker_fm.get("notebooklm")
+    if isinstance(marker_nlm, dict):
+        base_nlm = dict(resolved.get("notebooklm") or {})
+        for k, v in marker_nlm.items():
+            base_nlm[k] = v
+        resolved["notebooklm"] = base_nlm
 
     should_run: bool | None = None
     if agent:

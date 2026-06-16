@@ -1,6 +1,6 @@
 # Scientific-Writing-Superpowers (SWS)
 
-> 🧪 **v0.1 alpha** — the drafting → revising → review track is usable end-to-end, and the data/figures, literature, and author-voice tooling has landed. Submission orchestration and opt-in NotebookLM integration are the remaining v0.1 cycles.
+> **v0.1** — the SWS plugin's first stable release. All 13 cycles of the v0.1 roadmap have shipped: 24 agents, 9 writing-context profiles, marker-scoped hooks, the data/figures/literature/voice tooling, the submission orchestrator (`/sws:run-cycle`), and the opt-in NotebookLM RAG layer. Docx-first, end-to-end usable.
 
 **SWS is a Claude Code plugin for writing scientific manuscripts — built docx-first, for chemistry, biochemistry, and biology labs.** It turns Claude Code into a structured writing environment: a project scaffold, a roster of specialized agents for each phase of the writing cycle, profile/journal-aware constraints, wet-lab-to-figure traceability, and cycle-memory hooks that make a fresh session pick up where the last one left off without re-reading everything.
 
